@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import BookingDialog from "./BookingDialog";
 import { Check, Beaker, FlaskConical, Microscope } from "lucide-react";
 
 const Services = () => {
@@ -109,13 +110,15 @@ const Services = () => {
                 ))}
               </ul>
 
-              <Button
-                variant={service.popular ? "accent" : "hero"}
-                size="lg"
-                className="w-full"
-              >
-                Wybierz pakiet
-              </Button>
+              <BookingDialog lessonType={service.title}>
+                <Button
+                  variant={service.popular ? "accent" : "hero"}
+                  size="lg"
+                  className="w-full"
+                >
+                  Wybierz pakiet
+                </Button>
+              </BookingDialog>
             </div>
           ))}
         </div>

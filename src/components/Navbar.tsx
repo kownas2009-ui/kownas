@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import BookingDialog from "./BookingDialog";
 import { Atom, Menu, X } from "lucide-react";
 
 const Navbar = () => {
@@ -12,12 +13,28 @@ const Navbar = () => {
     { label: "Kontakt", href: "#contact" },
   ];
 
+  const scrollToSection = (href: string) => {
+    if (href === "#") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+    }
+    setIsOpen(false);
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
+          <a 
+            href="#" 
+            className="flex items-center gap-2"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("#");
+            }}
+          >
             <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
               <Atom className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -30,14 +47,20 @@ const Navbar = () => {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-muted-foreground hover:text-foreground transition-colors font-body font-medium"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection(link.href);
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors font-body font-medium cursor-pointer"
               >
                 {link.label}
               </a>
             ))}
-            <Button variant="hero" size="default">
-              Umów lekcję
-            </Button>
+            <BookingDialog lessonType="Umów lekcję">
+              <Button variant="hero" size="default">
+                Umów lekcję
+              </Button>
+            </BookingDialog>
           </div>
 
           {/* Mobile menu button */}
@@ -58,14 +81,19 @@ const Navbar = () => {
                   key={link.label}
                   href={link.href}
                   className="text-muted-foreground hover:text-foreground transition-colors font-body font-medium py-2"
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(link.href);
+                  }}
                 >
                   {link.label}
                 </a>
               ))}
-              <Button variant="hero" size="default" className="mt-2">
-                Umów lekcję
-              </Button>
+              <BookingDialog lessonType="Umów lekcję">
+                <Button variant="hero" size="default" className="mt-2">
+                  Umów lekcję
+                </Button>
+              </BookingDialog>
             </div>
           </div>
         )}

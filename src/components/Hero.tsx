@@ -1,8 +1,13 @@
 import { Button } from "@/components/ui/button";
 import MoleculeDecoration from "./MoleculeDecoration";
+import BookingDialog from "./BookingDialog";
 import { Atom, GraduationCap, Sparkles } from "lucide-react";
 
 const Hero = () => {
+  const scrollToServices = () => {
+    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20 px-4">
       {/* Background decorations */}
@@ -36,11 +41,13 @@ const Hero = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-          <Button variant="hero" size="xl" className="group">
-            <GraduationCap className="w-5 h-5 transition-transform group-hover:scale-110" />
-            Umów lekcję próbną
-          </Button>
-          <Button variant="heroOutline" size="xl">
+          <BookingDialog lessonType="Lekcja próbna">
+            <Button variant="hero" size="xl" className="group">
+              <GraduationCap className="w-5 h-5 transition-transform group-hover:scale-110" />
+              Umów lekcję próbną
+            </Button>
+          </BookingDialog>
+          <Button variant="heroOutline" size="xl" onClick={scrollToServices}>
             <Sparkles className="w-5 h-5" />
             Poznaj ofertę
           </Button>
