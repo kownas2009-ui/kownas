@@ -7,19 +7,21 @@ const Services = () => {
     {
       icon: Beaker,
       title: "Szkoła podstawowa",
-      price: "80",
+      subtitle: "Chemia i Fizyka",
+      price: "100",
       features: [
-        "Podstawy chemii",
+        "Podstawy chemii i fizyki",
         "Pomoc z zadaniami domowymi",
         "Przygotowanie do sprawdzianów",
-        "Eksperymenty pokazowe",
+        "Przygotowanie do konkursów",
       ],
       popular: false,
     },
     {
       icon: FlaskConical,
       title: "Liceum / Technikum",
-      price: "100",
+      subtitle: "Chemia",
+      price: "120",
       features: [
         "Chemia na poziomie rozszerzonym",
         "Przygotowanie do matury",
@@ -31,6 +33,7 @@ const Services = () => {
     {
       icon: Microscope,
       title: "Studia / Olimpiady",
+      subtitle: "Chemia",
       price: "120",
       features: [
         "Zaawansowane zagadnienia",
@@ -50,7 +53,7 @@ const Services = () => {
             Oferta zajęć
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-body">
-            Wybierz pakiet dopasowany do Twoich potrzeb. Każda lekcja trwa 60 minut.
+            Zajęcia online, tylko w weekendy. Każda lekcja trwa 60 minut.
           </p>
         </div>
 
@@ -82,7 +85,10 @@ const Services = () => {
                 />
               </div>
 
-              <h3 className="font-display text-2xl font-bold mb-2">{service.title}</h3>
+              <h3 className="font-display text-2xl font-bold mb-1">{service.title}</h3>
+              <p className={`text-sm mb-4 ${service.popular ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                {service.subtitle}
+              </p>
 
               <div className="flex items-baseline gap-1 mb-6">
                 <span className="text-4xl font-display font-bold">{service.price}</span>

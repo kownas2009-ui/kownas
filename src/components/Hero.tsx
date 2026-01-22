@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import MoleculeDecoration from "./MoleculeDecoration";
-import BookingDialog from "./BookingDialog";
-import { Atom, GraduationCap, Sparkles } from "lucide-react";
+import { Atom, Sparkles } from "lucide-react";
 
 const Hero = () => {
   const scrollToServices = () => {
@@ -25,7 +24,7 @@ const Hero = () => {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border shadow-soft mb-8 animate-fade-in-up">
           <Atom className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-muted-foreground">Korepetycje z chemii</span>
+          <span className="text-sm font-medium text-muted-foreground">Korepetycje online</span>
         </div>
 
         {/* Main heading */}
@@ -36,36 +35,26 @@ const Hero = () => {
 
         {/* Subtitle */}
         <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up font-body" style={{ animationDelay: "0.2s" }}>
-          Pomogę Ci zrozumieć i pokochać chemię. Indywidualne podejście, cierpliwość i pasja do nauki — to moja recepta na sukces.
+          Pomogę Ci zrozumieć i pokochać chemię oraz fizykę. Indywidualne podejście, cierpliwość i pasja do nauki — to moja recepta na sukces.
         </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-          <BookingDialog lessonType="Lekcja próbna">
-            <Button variant="hero" size="xl" className="group">
-              <GraduationCap className="w-5 h-5 transition-transform group-hover:scale-110" />
-              Umów lekcję próbną
-            </Button>
-          </BookingDialog>
-          <Button variant="heroOutline" size="xl" onClick={scrollToServices}>
-            <Sparkles className="w-5 h-5" />
+          <Button variant="hero" size="xl" className="group" onClick={scrollToServices}>
+            <Sparkles className="w-5 h-5 transition-transform group-hover:scale-110" />
             Poznaj ofertę
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-8 mt-16 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+        <div className="grid grid-cols-2 gap-8 mt-16 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-display font-bold text-primary">10+</div>
+            <div className="text-3xl md:text-4xl font-display font-bold text-primary">20+</div>
             <div className="text-sm text-muted-foreground mt-1 font-body">lat doświadczenia</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-display font-bold text-primary">500+</div>
+            <div className="text-3xl md:text-4xl font-display font-bold text-primary">1000+</div>
             <div className="text-sm text-muted-foreground mt-1 font-body">uczniów</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-display font-bold text-primary">98%</div>
-            <div className="text-sm text-muted-foreground mt-1 font-body">zdawalność matur</div>
           </div>
         </div>
       </div>
