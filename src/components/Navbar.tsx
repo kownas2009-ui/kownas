@@ -1,10 +1,21 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BookingDialog from "./BookingDialog";
-import { Atom, Menu, X } from "lucide-react";
+import AuthDialog from "./AuthDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { Atom, Menu, X, User, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const navLinks = [
     { label: "Start", href: "#" },
@@ -20,6 +31,10 @@ const Navbar = () => {
       document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
     }
     setIsOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -56,11 +71,34 @@ const Navbar = () => {
                 {link.label}
               </a>
             ))}
-            <BookingDialog lessonType="Umów lekcję">
-              <Button variant="hero" size="default">
-                Umów lekcję
-              </Button>
-            </BookingDialog>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="default">
+                    <User className="w-4 h-4 mr-2" />
+                    Moje konto
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/panel")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Panel ucznia
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Wyloguj się
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <AuthDialog>
+                <Button variant="hero" size="default">
+                  <User className="w-4 h-4 mr-2" />
+                  Zaloguj się
+                </Button>
+              </AuthDialog>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -89,11 +127,25 @@ const Navbar = () => {
                   {link.label}
                 </a>
               ))}
-              <BookingDialog lessonType="Umów lekcję">
-                <Button variant="hero" size="default" className="mt-2">
-                  Umów lekcję
-                </Button>
-              </BookingDialog>
+              {user ? (
+                <>
+                  <Button variant="outline" className="mt-2" onClick={() => navigate("/panel")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Panel ucznia
+                  </Button>
+                  <Button variant="ghost" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Wyloguj się
+                  </Button>
+                </>
+              ) : (
+                <AuthDialog>
+                  <Button variant="hero" size="default" className="mt-2">
+                    <User className="w-4 h-4 mr-2" />
+                    Zaloguj się
+                  </Button>
+                </AuthDialog>
+              )}
             </div>
           </div>
         )}

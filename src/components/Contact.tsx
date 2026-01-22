@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { Mail, Calendar, Video, Send } from "lucide-react";
 import MoleculeDecoration from "./MoleculeDecoration";
 
 const Contact = () => {
@@ -25,38 +25,40 @@ const Contact = () => {
           <div className="space-y-8">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0">
-                <Phone className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-display text-xl font-semibold text-foreground mb-1">
-                  Telefon
-                </h3>
-                <p className="text-muted-foreground font-body">+48 123 456 789</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0">
                 <Mail className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
                 <h3 className="font-display text-xl font-semibold text-foreground mb-1">
                   Email
                 </h3>
-                <p className="text-muted-foreground font-body">aneta@korepetycje.pl</p>
+                <p className="text-muted-foreground font-body">a.kownacka@gmail.com</p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-primary-foreground" />
+                <Video className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
                 <h3 className="font-display text-xl font-semibold text-foreground mb-1">
-                  Lokalizacja
+                  Forma zajęć
                 </h3>
                 <p className="text-muted-foreground font-body">
-                  Zajęcia stacjonarne i online
+                  Tylko online (Zoom / Google Meet)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl font-semibold text-foreground mb-1">
+                  Dostępność
+                </h3>
+                <p className="text-muted-foreground font-body">
+                  Tylko weekendy (sobota i niedziela)
                 </p>
               </div>
             </div>

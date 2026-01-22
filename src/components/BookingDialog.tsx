@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isSaturday, isSunday } from "date-fns";
 import { pl } from "date-fns/locale";
 import { CalendarIcon, Clock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,40 +20,80 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingDialogProps {
   children: React.ReactNode;
   lessonType?: string;
+  onSuccess?: () => void;
 }
 
 const timeSlots = [
   "9:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"
 ];
 
-const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialogProps) => {
+const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDialogProps) => {
+  const { user } = useAuth();
   const [date, setDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
-    if (!date || !selectedTime || !name || !phone) {
+  const handleSubmit = async () => {
+    if (!date || !selectedTime) {
       toast({
         title: "Uzupełnij wszystkie pola",
-        description: "Wybierz datę, godzinę i podaj swoje dane kontaktowe.",
+        description: "Wybierz datę i godzinę.",
         variant: "destructive",
       });
       return;
     }
 
-    // Here you would normally send to backend
-    setIsSubmitted(true);
-    toast({
-      title: "Lekcja umówiona! ✓",
-      description: `${format(date, "d MMMM yyyy", { locale: pl })} o ${selectedTime}`,
-    });
+    // If not logged in, require name and phone
+    if (!user && (!name || !phone)) {
+      toast({
+        title: "Uzupełnij wszystkie pola",
+        description: "Podaj swoje dane kontaktowe.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (user) {
+        // Save to database - using type assertion for newly created tables
+        const { error } = await (supabase as any).from("bookings").insert({
+          user_id: user.id,
+          lesson_type: lessonType,
+          booking_date: format(date, "yyyy-MM-dd"),
+          booking_time: selectedTime,
+          status: "pending",
+        });
+
+        if (error) throw error;
+      }
+
+      setIsSubmitted(true);
+      toast({
+        title: "Lekcja umówiona! ✓",
+        description: `${format(date, "d MMMM yyyy", { locale: pl })} o ${selectedTime}`,
+      });
+      onSuccess?.();
+    } catch (error) {
+      toast({
+        title: "Wystąpił błąd",
+        description: "Spróbuj ponownie później",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -70,6 +110,9 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
     }
   };
 
+  // Only allow weekends
+  const isWeekend = (date: Date) => isSaturday(date) || isSunday(date);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -77,7 +120,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{lessonType}</DialogTitle>
           <DialogDescription className="font-body">
-            Wybierz dogodny termin i zostaw swoje dane kontaktowe.
+            Wybierz termin w weekend (sobota lub niedziela).
           </DialogDescription>
         </DialogHeader>
 
@@ -108,7 +151,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
             {/* Date Picker */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                Wybierz datę
+                Wybierz datę (tylko weekendy)
               </label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -129,7 +172,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
                     selected={date}
                     onSelect={setDate}
                     disabled={(date) =>
-                      date < new Date() || date.getDay() === 0
+                      date < new Date() || !isWeekend(date)
                     }
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
@@ -161,8 +204,8 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
               </div>
             )}
 
-            {/* Contact Info */}
-            {selectedTime && (
+            {/* Contact Info - only show if not logged in */}
+            {selectedTime && !user && (
               <div className="space-y-4 animate-fade-in-up">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2 font-body">
@@ -196,8 +239,9 @@ const BookingDialog = ({ children, lessonType = "Lekcja próbna" }: BookingDialo
                 size="lg" 
                 className="w-full animate-fade-in-up"
                 onClick={handleSubmit}
+                disabled={isLoading}
               >
-                Umów lekcję
+                {isLoading ? "Rezerwuję..." : "Umów lekcję"}
               </Button>
             )}
           </div>
