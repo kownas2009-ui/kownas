@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import AdminCalendar from "@/components/admin/AdminCalendar";
 import StudentPDFGenerator from "@/components/admin/StudentPDFGenerator";
+import MonthlyStats from "@/components/admin/MonthlyStats";
 import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
 import SendNoteDialog from "@/components/admin/SendNoteDialog";
 
@@ -560,6 +561,9 @@ const AdminPanel = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Monthly Statistics */}
+        <MonthlyStats bookings={bookings} pricePerLesson={80} />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
