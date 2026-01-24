@@ -133,18 +133,14 @@ export const BubblingFlask = () => (
         d="M30 0 L30 50 L10 120 Q10 145 50 145 Q90 145 90 120 L70 50 L70 0 Z"
         className="fill-primary/10 stroke-primary/30"
         strokeWidth="2"
-        animate={{ 
-          fill: ["hsl(var(--primary) / 0.1)", "hsl(var(--secondary) / 0.1)", "hsl(var(--primary) / 0.1)"]
-        }}
-        transition={{ duration: 4, repeat: Infinity }}
       />
       
       {/* Liquid */}
       <motion.ellipse
-        cx="50"
-        cy="110"
-        rx="35"
-        ry="10"
+        cx={50}
+        cy={110}
+        rx={35}
+        ry={10}
         className="fill-primary/30"
         animate={{ 
           ry: [10, 12, 10],
@@ -152,21 +148,20 @@ export const BubblingFlask = () => (
         transition={{ duration: 1, repeat: Infinity }}
       />
       
-      {/* Bubbles */}
-      {[...Array(8)].map((_, i) => (
+      {/* Bubbles - fixed positions */}
+      {[30, 40, 50, 60, 70, 35, 55, 65].map((x, i) => (
         <motion.circle
           key={i}
-          cx={30 + Math.random() * 40}
-          cy="120"
-          r={2 + Math.random() * 3}
+          cx={x}
+          cy={120}
+          r={2 + (i % 3)}
           className="fill-primary/40"
           animate={{
             cy: [120, 60, 40],
             opacity: [1, 0.5, 0],
-            r: [2 + Math.random() * 3, 4 + Math.random() * 2, 0],
           }}
           transition={{
-            duration: 2 + Math.random(),
+            duration: 2 + (i * 0.2),
             delay: i * 0.3,
             repeat: Infinity,
           }}
