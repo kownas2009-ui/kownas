@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-// Animated floating atom
+// Enhanced floating atom with multiple orbitals
 export const FloatingAtom = ({ 
   className = "", 
   delay = 0,
@@ -76,7 +76,6 @@ export const FloatingAtom = ({
           r="5"
           className="fill-secondary"
           animate={{ 
-            offsetDistance: ["0%", "100%"],
             cx: [85, 15, 85],
             cy: [50, 50, 50]
           }}
@@ -120,21 +119,21 @@ export const BubblingBeaker = ({ className = "" }: { className?: string }) => {
         />
         
         {/* Bubbles */}
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <motion.circle
             key={i}
-            cx={30 + i * 10}
+            cx={28 + i * 6}
             cy={70}
-            r={3}
+            r={2 + Math.random() * 2}
             className="fill-secondary/60"
             animate={{
-              cy: [70, 40, 30],
-              opacity: [1, 0.5, 0],
-              scale: [1, 1.5, 0]
+              cy: [70, 35, 25],
+              opacity: [1, 0.6, 0],
+              scale: [1, 1.3, 0]
             }}
             transition={{
-              duration: 2,
-              delay: i * 0.5,
+              duration: 1.5 + Math.random(),
+              delay: i * 0.4,
               repeat: Infinity,
               ease: "easeOut"
             }}
@@ -183,11 +182,6 @@ export const DNAHelix = ({ className = "" }: { className?: string }) => {
               y2={10 + i * 20}
               className="stroke-muted-foreground/30"
               strokeWidth="2"
-              animate={{
-                x1: [15 + Math.sin(i * 0.8) * 15, 45 - Math.sin(i * 0.8) * 15],
-                x2: [45 - Math.sin(i * 0.8) * 15, 15 + Math.sin(i * 0.8) * 15]
-              }}
-              transition={{ duration: 3, delay: i * 0.2, repeat: Infinity }}
             />
           </g>
         ))}
@@ -300,6 +294,131 @@ export const ElementBadge = ({
     >
       <span className="absolute top-1 left-2 text-xs text-muted-foreground">{number}</span>
       <span className="text-2xl font-bold text-primary">{symbol}</span>
+    </motion.div>
+  );
+};
+
+// Floating formula decorations
+export const FloatingFormula = ({ 
+  formula, 
+  className = "",
+  delay = 0 
+}: { 
+  formula: string; 
+  className?: string;
+  delay?: number;
+}) => {
+  return (
+    <motion.div
+      className={`absolute font-display font-bold text-primary/10 select-none pointer-events-none ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ 
+        opacity: [0.05, 0.15, 0.05],
+        y: [0, -10, 0],
+        rotate: [-5, 5, -5]
+      }}
+      transition={{ 
+        duration: 6, 
+        delay,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      {formula}
+    </motion.div>
+  );
+};
+
+// Test tube animation
+export const TestTube = ({ className = "" }: { className?: string }) => {
+  return (
+    <motion.div 
+      className={className}
+      animate={{ rotate: [-5, 5, -5] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <svg width="40" height="100" viewBox="0 0 40 100" fill="none">
+        {/* Tube */}
+        <path
+          d="M10 10 L10 75 Q10 90 20 90 Q30 90 30 75 L30 10"
+          className="stroke-primary/40"
+          strokeWidth="3"
+          fill="none"
+        />
+        <path d="M5 10 L35 10" className="stroke-primary/40" strokeWidth="3" />
+        
+        {/* Liquid */}
+        <motion.path
+          d="M12 50 L12 75 Q12 87 20 87 Q28 87 28 75 L28 50 Q20 55 12 50 Z"
+          className="fill-secondary/40"
+          animate={{
+            d: [
+              "M12 50 L12 75 Q12 87 20 87 Q28 87 28 75 L28 50 Q20 55 12 50 Z",
+              "M12 50 L12 75 Q12 87 20 87 Q28 87 28 75 L28 50 Q20 45 12 50 Z",
+              "M12 50 L12 75 Q12 87 20 87 Q28 87 28 75 L28 50 Q20 55 12 50 Z"
+            ]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        
+        {/* Bubbles */}
+        {[0, 1, 2].map((i) => (
+          <motion.circle
+            key={i}
+            cx={17 + i * 3}
+            cy={70}
+            r={2}
+            className="fill-primary/50"
+            animate={{
+              cy: [70, 45],
+              opacity: [1, 0],
+            }}
+            transition={{
+              duration: 1.2,
+              delay: i * 0.4,
+              repeat: Infinity,
+            }}
+          />
+        ))}
+      </svg>
+    </motion.div>
+  );
+};
+
+// Benzene ring
+export const BenzeneRing = ({ className = "" }: { className?: string }) => {
+  return (
+    <motion.div
+      className={className}
+      animate={{ rotate: 360 }}
+      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+    >
+      <svg width="80" height="80" viewBox="0 0 100 100" fill="none">
+        <motion.path
+          d="M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z"
+          className="stroke-primary/30"
+          strokeWidth="2"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        {/* Inner circle for aromaticity */}
+        <circle cx="50" cy="50" r="20" className="stroke-secondary/20" strokeWidth="2" fill="none" />
+        
+        {/* Carbon atoms at vertices */}
+        {[[50, 10], [85, 30], [85, 70], [50, 90], [15, 70], [15, 30]].map(([cx, cy], i) => (
+          <motion.circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r="5"
+            className="fill-primary/40"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
+          />
+        ))}
+      </svg>
     </motion.div>
   );
 };
