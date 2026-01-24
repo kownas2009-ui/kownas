@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import BookingCelebration from "./BookingCelebration";
 
 interface BookingDialogProps {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
   const [isLoading, setIsLoading] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Fetch booked slots for selected date
   const fetchBookedSlots = async (selectedDate: Date) => {
@@ -113,6 +115,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
         if (error) throw error;
       }
 
+      setShowCelebration(true);
       setIsSubmitted(true);
       toast({
         title: "Lekcja umówiona! ✓",
@@ -148,9 +151,14 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
   const isWeekend = (date: Date) => isSaturday(date) || isSunday(date);
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-background">
+    <>
+      <BookingCelebration 
+        isVisible={showCelebration} 
+        onComplete={() => setShowCelebration(false)} 
+      />
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>{children}</DialogTrigger>
+        <DialogContent className="sm:max-w-[500px] bg-background">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{lessonType}</DialogTitle>
           <DialogDescription className="font-body">
@@ -303,6 +311,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
