@@ -381,9 +381,14 @@ const AdminPanel = () => {
 
       if (bookingsError) throw bookingsError;
 
-      const { count: studentsCount } = await (supabase as any)
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
+      // Count unique students who have made bookings
+      const { data: studentData } = await (supabase as any)
+        .from("bookings")
+        .select("user_id")
+        .neq("status", "cancelled");
+      
+      const uniqueStudentIds = new Set(studentData?.map((b: any) => b.user_id) || []);
+      const studentsCount = uniqueStudentIds.size;
 
       const today = new Date();
       const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);

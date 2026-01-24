@@ -7,42 +7,54 @@ const testimonials = [
     role: "Uczennica liceum",
     content: "Dzięki pani Anecie zdałam maturę rozszerzoną z chemii na 85%! Tłumaczy cierpliwie i zawsze znajduje czas na dodatkowe pytania.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+    avatar: null,
+    initials: "KM",
+    color: "from-pink-400 to-rose-500"
   },
   {
     name: "Tomek K.",
     role: "Uczeń 8 klasy",
     content: "Chemia przestała być straszna! Teraz nawet lubię rozwiązywać zadania. Polecam każdemu!",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+    avatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
+    initials: null,
+    color: null
   },
   {
     name: "Anna W.",
     role: "Mama ucznia",
     content: "Syn znacznie poprawił oceny z chemii i fizyki. Pani Aneta ma niesamowitą cierpliwość i umiejętność tłumaczenia trudnych zagadnień.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
+    avatar: null,
+    initials: "AW",
+    color: "from-emerald-400 to-teal-500"
   },
   {
     name: "Michał P.",
     role: "Uczeń technikum",
     content: "Profesjonalne podejście i świetne materiały. Zajęcia online są bardzo wygodne i efektywne.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+    avatar: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=100&h=100&fit=crop",
+    initials: null,
+    color: null
   },
   {
     name: "Ola S.",
     role: "Studentka chemii",
     content: "Najlepsza korepetytorka jaką miałam! Dzięki niej pokochałam chemię organiczną.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face"
+    avatar: null,
+    initials: "OS",
+    color: "from-violet-400 to-purple-500"
   },
   {
     name: "Piotr N.",
     role: "Tata uczennicy",
     content: "Córka z 2 na 5 w pół roku! Pani Aneta to prawdziwy profesjonalista.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face"
+    avatar: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&h=100&fit=crop",
+    initials: null,
+    color: null
   }
 ];
 
@@ -106,12 +118,18 @@ const Testimonials = () => {
                   className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                 >
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {testimonial.avatar ? (
+                    <img 
+                      src={testimonial.avatar} 
+                      alt={testimonial.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${testimonial.color} flex items-center justify-center`}>
+                      <span className="text-white font-bold text-lg">{testimonial.initials}</span>
+                    </div>
+                  )}
                 </motion.div>
                 <div>
                   <p className="font-display font-semibold text-foreground">

@@ -6,7 +6,7 @@ interface NeonButtonProps {
   children: ReactNode;
   onClick?: () => void;
   className?: string;
-  variant?: "primary" | "secondary" | "outline" | "glow";
+  variant?: "primary" | "secondary" | "outline" | "glow" | "cyan" | "pink" | "emerald" | "amber";
   size?: "sm" | "md" | "lg" | "xl";
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
@@ -36,6 +36,21 @@ const NeonButton = ({
     secondary: "bg-gradient-to-r from-secondary via-secondary/90 to-primary text-secondary-foreground",
     outline: "bg-transparent border-2 border-primary text-primary hover:bg-primary/10",
     glow: "bg-gradient-to-r from-primary/80 via-secondary/80 to-primary/80 text-primary-foreground",
+    cyan: "bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-500 text-white",
+    pink: "bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-500 text-white",
+    emerald: "bg-gradient-to-r from-emerald-500 via-green-400 to-teal-500 text-white",
+    amber: "bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-500 text-white",
+  };
+  
+  const variantGlowColors: Record<string, string> = {
+    primary: "hsl(var(--primary))",
+    secondary: "hsl(var(--secondary))",
+    outline: "hsl(var(--primary))",
+    glow: "hsl(var(--primary))",
+    cyan: "rgb(6, 182, 212)",
+    pink: "rgb(236, 72, 153)",
+    emerald: "rgb(16, 185, 129)",
+    amber: "rgb(245, 158, 11)",
   };
 
   return (
@@ -61,8 +76,8 @@ const NeonButton = ({
       whileTap={{ scale: disabled ? 1 : 0.95 }}
       style={{
         boxShadow: isHovered
-          ? `0 0 20px hsl(var(--primary) / 0.5), 0 0 40px hsl(var(--secondary) / 0.3), 0 0 60px hsl(var(--primary) / 0.2)`
-          : `0 4px 15px hsl(var(--primary) / 0.2)`,
+          ? `0 0 20px ${variantGlowColors[variant] || variantGlowColors.primary}80, 0 0 40px ${variantGlowColors[variant] || variantGlowColors.primary}50, 0 0 60px ${variantGlowColors[variant] || variantGlowColors.primary}30`
+          : `0 4px 15px ${variantGlowColors[variant] || variantGlowColors.primary}33`,
       }}
     >
       {/* Animated background gradient */}
