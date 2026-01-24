@@ -6,6 +6,7 @@ import AuthDialog from "./AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Atom, Menu, X, User, LogOut, Shield } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,6 +94,8 @@ const Navbar = () => {
                 />
               </motion.a>
             ))}
+            
+            <ThemeToggle />
             
             {user ? (
               <DropdownMenu>
