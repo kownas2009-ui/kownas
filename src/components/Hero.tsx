@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import NeonButton from "@/components/NeonButton";
 import { FloatingAtom, BubblingBeaker, AnimatedMolecule } from "./ChemistryAnimations";
-import { Atom, Sparkles, ArrowDown } from "lucide-react";
+import { Atom, Sparkles, ArrowDown, Zap } from "lucide-react";
 
 const Hero = () => {
   const scrollToServices = () => {
@@ -100,43 +100,30 @@ const Hero = () => {
           Pomogę Ci zrozumieć i pokochać chemię oraz fizykę. Indywidualne podejście, cierpliwość i pasja do nauki — to moja recepta na sukces.
         </motion.p>
 
-        {/* CTA Button with chemistry animation */}
+        {/* CTA Buttons with neon effects */}
         <motion.div 
           className="flex flex-col sm:flex-row gap-4 justify-center"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <NeonButton 
+            variant="primary" 
+            size="lg" 
+            onClick={scrollToServices}
           >
-            <Button 
-              variant="hero" 
-              size="xl" 
-              className="group relative overflow-hidden" 
-              onClick={scrollToServices}
-            >
-              {/* Animated shine effect */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                initial={{ x: "-100%" }}
-                animate={{ x: "100%" }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              />
-              
-              {/* Bubbles on hover */}
-              <motion.div
-                className="absolute bottom-0 left-1/4 w-2 h-2 rounded-full bg-white/40"
-                initial={{ y: 0, opacity: 0 }}
-                whileHover={{ y: -20, opacity: [0, 1, 0] }}
-                transition={{ duration: 0.8 }}
-              />
-              
-              <Sparkles className="w-5 h-5 transition-transform group-hover:scale-110 group-hover:rotate-12" />
-              <span className="relative z-10">Poznaj ofertę</span>
-            </Button>
-          </motion.div>
+            <Sparkles className="w-5 h-5" />
+            <span>Poznaj ofertę</span>
+          </NeonButton>
+          
+          <NeonButton 
+            variant="outline" 
+            size="lg" 
+            onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            <Zap className="w-5 h-5" />
+            <span>Umów lekcję</span>
+          </NeonButton>
         </motion.div>
 
         {/* Stats with counting animation */}

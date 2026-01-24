@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import AuthDialog from "./AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Atom, Menu, X, User, LogOut, Shield } from "lucide-react";
+import { Atom, Menu, X, User, LogOut, Shield, BookOpen, Beaker, GraduationCap, HelpCircle, Calendar, Star } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
@@ -21,10 +21,13 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const navLinks = [
-    { label: "Start", href: "#" },
-    { label: "O mnie", href: "#about" },
-    { label: "Oferta", href: "#services" },
-    { label: "Kontakt", href: "#contact" },
+    { label: "Start", href: "#", icon: Atom },
+    { label: "O mnie", href: "#about", icon: GraduationCap },
+    { label: "Jak działam", href: "#how-it-works", icon: Beaker },
+    { label: "Oferta", href: "#services", icon: BookOpen },
+    { label: "Opinie", href: "#testimonials", icon: Star },
+    { label: "FAQ", href: "#faq", icon: HelpCircle },
+    { label: "Kontakt", href: "#contact", icon: Calendar },
   ];
 
   const scrollToSection = (href: string) => {
@@ -71,7 +74,7 @@ const Navbar = () => {
           </motion.a>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             {navLinks.map((link, index) => (
               <motion.a
                 key={link.label}
@@ -80,14 +83,16 @@ const Navbar = () => {
                   e.preventDefault();
                   scrollToSection(link.href);
                 }}
-                className="relative text-muted-foreground hover:text-foreground transition-colors font-body font-medium cursor-pointer group"
+                className="relative text-muted-foreground hover:text-foreground transition-colors font-body font-medium cursor-pointer group flex items-center gap-1.5"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -2 }}
               >
-                {link.label}
+                <link.icon className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="text-sm">{link.label}</span>
                 <motion.span
-                  className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary origin-left"
+                  className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-secondary origin-left"
                   initial={{ scaleX: 0 }}
                   whileHover={{ scaleX: 1 }}
                   transition={{ duration: 0.2 }}
@@ -151,7 +156,7 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <motion.button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-foreground"
+            className="lg:hidden p-2 text-foreground"
             whileTap={{ scale: 0.9 }}
           >
             <AnimatePresence mode="wait">
@@ -182,26 +187,27 @@ const Navbar = () => {
         <AnimatePresence>
           {isOpen && (
             <motion.div 
-              className="md:hidden py-4 border-t border-border"
+              className="lg:hidden py-4 border-t border-border"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
                 {navLinks.map((link, index) => (
                   <motion.a
                     key={link.label}
                     href={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors font-body font-medium py-2"
+                    className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors font-body font-medium py-2 px-3 rounded-lg hover:bg-primary/5"
                     onClick={(e) => {
                       e.preventDefault();
                       scrollToSection(link.href);
                     }}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
+                    <link.icon className="w-4 h-4 text-primary" />
                     {link.label}
                   </motion.a>
                 ))}

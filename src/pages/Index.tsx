@@ -7,12 +7,16 @@ import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import CustomCursor from "@/components/CustomCursor";
 import { FloatingAtom, BubblingBeaker, DNAHelix, TestTube, BenzeneRing, FloatingFormula } from "@/components/ChemistryAnimations";
 import { motion } from "framer-motion";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Custom neon cursor */}
+      <CustomCursor />
+      
       {/* Extensive floating chemistry decorations */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Floating atoms at various positions */}
