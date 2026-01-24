@@ -6,25 +6,43 @@ const testimonials = [
     name: "Kasia M.",
     role: "Uczennica liceum",
     content: "Dzięki pani Anecie zdałam maturę rozszerzoną z chemii na 85%! Tłumaczy cierpliwie i zawsze znajduje czas na dodatkowe pytania.",
-    rating: 5
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
   },
   {
     name: "Tomek K.",
     role: "Uczeń 8 klasy",
     content: "Chemia przestała być straszna! Teraz nawet lubię rozwiązywać zadania. Polecam każdemu!",
-    rating: 5
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
   },
   {
     name: "Anna W.",
     role: "Mama ucznia",
     content: "Syn znacznie poprawił oceny z chemii i fizyki. Pani Aneta ma niesamowitą cierpliwość i umiejętność tłumaczenia trudnych zagadnień.",
-    rating: 5
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
   },
   {
     name: "Michał P.",
     role: "Uczeń technikum",
     content: "Profesjonalne podejście i świetne materiały. Zajęcia online są bardzo wygodne i efektywne.",
-    rating: 5
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+  },
+  {
+    name: "Ola S.",
+    role: "Studentka chemii",
+    content: "Najlepsza korepetytorka jaką miałam! Dzięki niej pokochałam chemię organiczną.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face"
+  },
+  {
+    name: "Piotr N.",
+    role: "Tata uczennicy",
+    content: "Córka z 2 na 5 w pół roku! Pani Aneta to prawdziwy profesjonalista.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face"
   }
 ];
 
@@ -46,7 +64,7 @@ const Testimonials = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
@@ -84,11 +102,17 @@ const Testimonials = () => {
 
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full gradient-accent flex items-center justify-center">
-                  <span className="text-accent-foreground font-bold text-sm">
-                    {testimonial.name.charAt(0)}
-                  </span>
-                </div>
+                <motion.div 
+                  className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                >
+                  <img 
+                    src={testimonial.avatar} 
+                    alt={testimonial.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </motion.div>
                 <div>
                   <p className="font-display font-semibold text-foreground">
                     {testimonial.name}
