@@ -76,35 +76,57 @@ const AnimatedButton = ({
         />
       )}
 
-      {/* Particle bubbles on hover */}
+      {/* Chemistry bubbles on hover */}
       {isHovered && (
         <>
-          {[...Array(6)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1.5 h-1.5 rounded-full bg-white/40"
-              initial={{ 
-                x: 0, 
-                y: 0,
-                opacity: 0 
+              className="absolute rounded-full"
+              style={{
+                left: `${10 + i * 11}%`,
+                bottom: "5%",
+                width: 4 + Math.random() * 4,
+                height: 4 + Math.random() * 4,
+                background: i % 2 === 0 
+                  ? "hsl(var(--secondary) / 0.6)" 
+                  : "hsl(var(--primary-foreground) / 0.4)",
               }}
+              initial={{ y: 0, opacity: 0, scale: 0.5 }}
               animate={{ 
-                x: (Math.random() - 0.5) * 100,
-                y: -30 - Math.random() * 30,
-                opacity: [0, 1, 0]
+                y: [-5, -40 - Math.random() * 20],
+                opacity: [0, 1, 0],
+                scale: [0.5, 1, 0.3],
               }}
               transition={{ 
-                duration: 0.8,
-                delay: i * 0.1,
-                repeat: Infinity
-              }}
-              style={{
-                left: `${20 + i * 12}%`,
-                bottom: "10%"
+                duration: 1 + Math.random() * 0.5,
+                delay: i * 0.12,
+                repeat: Infinity,
+                ease: "easeOut"
               }}
             />
           ))}
         </>
+      )}
+      
+      {/* Molecule structure on hover */}
+      {isHovered && (
+        <motion.div
+          className="absolute -left-2 -bottom-2 w-10 h-10 pointer-events-none"
+          initial={{ opacity: 0, scale: 0, rotate: -90 }}
+          animate={{ opacity: 0.6, scale: 1, rotate: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <svg viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="5" className="fill-white/50" />
+            <circle cx="10" cy="10" r="3" className="fill-white/30" />
+            <circle cx="30" cy="10" r="3" className="fill-white/30" />
+            <circle cx="20" cy="35" r="3" className="fill-white/30" />
+            <line x1="20" y1="20" x2="10" y2="10" className="stroke-white/30" strokeWidth="1.5" />
+            <line x1="20" y1="20" x2="30" y2="10" className="stroke-white/30" strokeWidth="1.5" />
+            <line x1="20" y1="20" x2="20" y2="35" className="stroke-white/30" strokeWidth="1.5" />
+          </svg>
+        </motion.div>
       )}
 
       {/* Atom orbital effect */}
