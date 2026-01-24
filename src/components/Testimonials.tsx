@@ -34,9 +34,9 @@ const testimonials = [
     role: "Uczeń technikum",
     content: "Profesjonalne podejście i świetne materiały. Zajęcia online są bardzo wygodne i efektywne.",
     rating: 5,
-    avatar: null,
-    initials: "MP",
-    color: "from-orange-400 to-amber-500"
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
   },
   {
     name: "Ola S.",
@@ -52,7 +52,7 @@ const testimonials = [
     role: "Tata uczennicy",
     content: "Córka z 2 na 5 w pół roku! Pani Aneta to prawdziwy profesjonalista.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     initials: null,
     color: null
   },
@@ -70,18 +70,18 @@ const testimonials = [
     role: "Uczeń 3 klasy liceum",
     content: "Z chemii miałem 2, teraz mam 5. Magia!",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    initials: null,
-    color: null
+    avatar: null,
+    initials: "J",
+    color: "from-rose-400 to-pink-500"
   },
   {
     name: "Zosia K.",
-    role: "Uczennica gimnazjum",
+    role: "Uczennica 2 liceum",
     content: "Pani Aneta tłumaczy tak, że naprawdę rozumiem! Super zajęcia.",
     rating: 5,
-    avatar: null,
-    initials: "ZK",
-    color: "from-emerald-400 to-teal-500"
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
   }
 ];
 
@@ -96,7 +96,7 @@ const Testimonials = () => {
           viewport={{ once: true }}
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Co mówią uczniowie?
+            Co mówią uczniowie oraz rodzice uczniów?
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-body">
             Opinie moich uczniów i ich rodziców
@@ -111,23 +111,27 @@ const Testimonials = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -5 }}
-              className="relative p-8 rounded-2xl bg-background border border-border shadow-soft group"
+              whileHover={{ y: -5, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative p-8 rounded-2xl bg-background border border-border shadow-soft group cursor-pointer"
             >
               {/* Quote icon */}
-              <div className="absolute -top-4 -left-4 w-10 h-10 rounded-xl gradient-hero flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+              <motion.div 
+                className="absolute -top-4 -left-4 w-10 h-10 rounded-xl gradient-hero flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity"
+                whileHover={{ rotate: 10, scale: 1.1 }}
+              >
                 <Quote className="w-5 h-5 text-primary-foreground" />
-              </div>
+              </motion.div>
 
               {/* Stars */}
               <div className="flex gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
+                    initial={{ scale: 0, rotate: -180 }}
+                    whileInView={{ scale: 1, rotate: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.2 + i * 0.1 }}
+                    transition={{ delay: 0.2 + i * 0.1, type: "spring" }}
                   >
                     <Star className="w-5 h-5 fill-secondary text-secondary" />
                   </motion.div>
@@ -172,7 +176,7 @@ const Testimonials = () => {
               <motion.div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                 style={{
-                  background: "linear-gradient(135deg, hsl(var(--primary) / 0.03) 0%, hsl(var(--secondary) / 0.03) 100%)"
+                  background: "linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, hsl(var(--secondary) / 0.05) 100%)"
                 }}
               />
             </motion.div>
