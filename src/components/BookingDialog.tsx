@@ -42,6 +42,40 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Fetch booked slots for selected date
+  const fetchBookedSlots = async (selectedDate: Date) => {
+    setLoadingSlots(true);
+    try {
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("booking_time")
+        .eq("booking_date", dateStr)
+        .neq("status", "cancelled");
+      
+      if (error) throw error;
+      setBookedSlots(data?.map(b => b.booking_time) || []);
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      setBookedSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  // Handle date selection
+  const handleDateSelect = (newDate: Date | undefined) => {
+    setDate(newDate);
+    setSelectedTime(undefined);
+    if (newDate) {
+      fetchBookedSlots(newDate);
+    } else {
+      setBookedSlots([]);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!date || !selectedTime) {
@@ -170,7 +204,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleDateSelect}
                     disabled={(date) =>
                       date < new Date() || !isWeekend(date)
                     }
@@ -188,19 +222,40 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
                   <Clock className="w-4 h-4 inline mr-1" />
                   Wybierz godzinę
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map((time) => (
-                    <Button
-                      key={time}
-                      variant={selectedTime === time ? "hero" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedTime(time)}
-                      className="font-body"
-                    >
-                      {time}
-                    </Button>
-                  ))}
-                </div>
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {timeSlots.map((time) => {
+                      const isBooked = bookedSlots.includes(time);
+                      return (
+                        <Button
+                          key={time}
+                          variant={selectedTime === time ? "hero" : "outline"}
+                          size="sm"
+                          onClick={() => !isBooked && setSelectedTime(time)}
+                          className={cn(
+                            "font-body relative",
+                            isBooked && "opacity-50 cursor-not-allowed line-through"
+                          )}
+                          disabled={isBooked}
+                        >
+                          {time}
+                          {isBooked && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+                {bookedSlots.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Szare terminy są już zajęte
+                  </p>
+                )}
               </div>
             )}
 

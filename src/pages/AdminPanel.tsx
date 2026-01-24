@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
@@ -25,9 +26,15 @@ import {
   GraduationCap,
   Zap,
   FlaskConical,
-  Timer
+  Timer,
+  CalendarDays,
+  ListChecks,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
+import AdminCalendar from "@/components/admin/AdminCalendar";
+import StudentPDFGenerator from "@/components/admin/StudentPDFGenerator";
+import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
 
 interface Booking {
   id: string;
@@ -335,6 +342,8 @@ const AdminPanel = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
+  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -456,9 +465,12 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-background relative">
       <FloatingMolecules />
+      <FloatingFormulas />
+      <DNAHelixAdmin />
+      <BubblingFlask />
       
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-20"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -577,174 +589,316 @@ const AdminPanel = () => {
           />
         </div>
 
-        {/* Filters */}
+        {/* View Toggle + PDF Generator */}
         <motion.div 
-          className="flex gap-2 mb-6"
+          className="flex items-center justify-between mb-6 flex-wrap gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          {[
-            { id: "all", label: "Wszystkie", icon: Calendar },
-            { id: "pending", label: "Oczekujące", icon: Clock },
-            { id: "confirmed", label: "Potwierdzone", icon: CheckCircle }
-          ].map((f) => (
-            <motion.div key={f.id} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant={filter === f.id ? "hero" : "outline"}
-                size="sm"
-                onClick={() => setFilter(f.id as typeof filter)}
-                className="gap-2"
-              >
-                <f.icon className="w-4 h-4" />
-                {f.label}
-              </Button>
-            </motion.div>
-          ))}
-        </motion.div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar")} className="w-auto">
+            <TabsList className="bg-card/80 backdrop-blur-sm">
+              <TabsTrigger value="list" className="gap-2">
+                <ListChecks className="w-4 h-4" />
+                Lista
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="gap-2">
+                <CalendarDays className="w-4 h-4" />
+                Kalendarz
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        {/* Bookings Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-card/80 backdrop-blur-sm rounded-3xl border border-border shadow-soft overflow-hidden"
-        >
-          <div className="p-6 border-b border-border flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold flex items-center gap-2">
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              >
-                <FlaskConical className="w-5 h-5 text-primary" />
-              </motion.div>
-              Nadchodzące lekcje ({upcomingBookings.length})
-            </h2>
-          </div>
-
-          {loadingData ? (
-            <div className="flex justify-center py-12">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <Atom className="w-10 h-10 text-primary" />
-              </motion.div>
-            </div>
-          ) : upcomingBookings.length === 0 ? (
-            <motion.div 
-              className="p-12 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              </motion.div>
-              <p className="text-muted-foreground text-lg">Brak zaplanowanych lekcji</p>
-            </motion.div>
-          ) : (
-            <div className="divide-y divide-border">
-              {upcomingBookings.map((booking, i) => (
-                <motion.div
-                  key={booking.id}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ backgroundColor: "hsl(var(--muted) / 0.5)" }}
-                  className="p-5 transition-colors"
-                >
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                      <motion.div 
-                        className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center"
-                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <GraduationCap className="w-7 h-7 text-primary" />
-                      </motion.div>
-                      <div>
-                        <h3 className="font-display font-semibold text-lg">
-                          {booking.profiles?.full_name || "Uczeń"}
-                        </h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
-                          <span className="flex items-center gap-1">
-                            <FlaskConical className="w-3 h-3" />
-                            {booking.lesson_type}
-                          </span>
-                          {booking.profiles?.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {booking.profiles.phone}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="font-semibold text-foreground">
-                          {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}
-                        </p>
-                        <p className="text-sm text-muted-foreground flex items-center justify-end gap-1">
-                          <Clock className="w-3 h-3" />
-                          {booking.booking_time}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {booking.status === "pending" ? (
-                          <>
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                onClick={() => updateBookingStatus(booking.id, "confirmed")}
-                              >
-                                <Check className="w-4 h-4" />
-                              </Button>
-                            </motion.div>
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                onClick={() => updateBookingStatus(booking.id, "cancelled")}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </motion.div>
-                          </>
-                        ) : (
-                          <motion.span 
-                            className={`px-4 py-2 rounded-full text-xs font-semibold ${
-                              booking.status === "confirmed"
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : booking.status === "cancelled"
-                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                            }`}
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            {booking.status === "confirmed" 
-                              ? "✓ Potwierdzona" 
-                              : booking.status === "cancelled"
-                              ? "✗ Anulowana"
-                              : "Oczekuje"}
-                          </motion.span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+          <div className="flex items-center gap-3">
+            <StudentPDFGenerator bookings={bookings} />
+            
+            {/* Filters */}
+            <div className="flex gap-2">
+              {[
+                { id: "all", label: "Wszystkie", icon: Calendar },
+                { id: "pending", label: "Oczekujące", icon: Clock },
+                { id: "confirmed", label: "Potwierdzone", icon: CheckCircle }
+              ].map((f) => (
+                <motion.div key={f.id} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant={filter === f.id ? "hero" : "outline"}
+                    size="sm"
+                    onClick={() => setFilter(f.id as typeof filter)}
+                    className="gap-2"
+                  >
+                    <f.icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{f.label}</span>
+                  </Button>
                 </motion.div>
               ))}
             </div>
-          )}
+          </div>
         </motion.div>
+
+        {/* Selected Booking Details Modal */}
+        <AnimatePresence>
+          {selectedBookingDetails && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedBookingDetails(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-card rounded-3xl p-8 max-w-md w-full shadow-2xl border border-border"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-display text-2xl font-bold">Szczegóły lekcji</h3>
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedBookingDetails(null)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-2xl">
+                    <div className="w-14 h-14 rounded-2xl gradient-hero flex items-center justify-center">
+                      <GraduationCap className="w-7 h-7 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{selectedBookingDetails.profiles?.full_name || "Uczeń"}</p>
+                      {selectedBookingDetails.profiles?.phone && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {selectedBookingDetails.profiles.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-muted/30 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Data</p>
+                      <p className="font-semibold">
+                        {format(new Date(selectedBookingDetails.booking_date), "d MMMM yyyy", { locale: pl })}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Godzina</p>
+                      <p className="font-semibold">{selectedBookingDetails.booking_time}</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Typ lekcji</p>
+                      <p className="font-semibold">{selectedBookingDetails.lesson_type}</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Status</p>
+                      <p className={`font-semibold ${
+                        selectedBookingDetails.status === "confirmed" ? "text-green-600" :
+                        selectedBookingDetails.status === "cancelled" ? "text-red-600" : "text-amber-600"
+                      }`}>
+                        {selectedBookingDetails.status === "confirmed" ? "Potwierdzona" :
+                         selectedBookingDetails.status === "cancelled" ? "Anulowana" : "Oczekująca"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedBookingDetails.status === "pending" && (
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        className="flex-1 gap-2"
+                        onClick={() => {
+                          updateBookingStatus(selectedBookingDetails.id, "confirmed");
+                          setSelectedBookingDetails(null);
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                        Potwierdź
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          updateBookingStatus(selectedBookingDetails.id, "cancelled");
+                          setSelectedBookingDetails(null);
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                        Anuluj
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Content based on active tab */}
+        <AnimatePresence mode="wait">
+          {activeTab === "calendar" ? (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <AdminCalendar 
+                bookings={filteredBookings} 
+                onSelectBooking={(booking) => setSelectedBookingDetails(booking)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="bg-card/80 backdrop-blur-sm rounded-3xl border border-border shadow-soft overflow-hidden"
+            >
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  >
+                    <FlaskConical className="w-5 h-5 text-primary" />
+                  </motion.div>
+                  Nadchodzące lekcje ({upcomingBookings.length})
+                </h2>
+              </div>
+
+              {loadingData ? (
+                <div className="flex justify-center py-12">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Atom className="w-10 h-10 text-primary" />
+                  </motion.div>
+                </div>
+              ) : upcomingBookings.length === 0 ? (
+                <motion.div 
+                  className="p-12 text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  </motion.div>
+                  <p className="text-muted-foreground text-lg">Brak zaplanowanych lekcji</p>
+                </motion.div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {upcomingBookings.map((booking, i) => (
+                    <motion.div
+                      key={booking.id}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={{ backgroundColor: "hsl(var(--muted) / 0.5)" }}
+                      className="p-5 transition-colors cursor-pointer"
+                      onClick={() => setSelectedBookingDetails(booking)}
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-4">
+                          <motion.div 
+                            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center"
+                            whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <GraduationCap className="w-7 h-7 text-primary" />
+                          </motion.div>
+                          <div>
+                            <h3 className="font-display font-semibold text-lg">
+                              {booking.profiles?.full_name || "Uczeń"}
+                            </h3>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
+                              <span className="flex items-center gap-1">
+                                <FlaskConical className="w-3 h-3" />
+                                {booking.lesson_type}
+                              </span>
+                              {booking.profiles?.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3" />
+                                  {booking.profiles.phone}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          <div className="text-right">
+                            <p className="font-semibold text-foreground">
+                              {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}
+                            </p>
+                            <p className="text-sm text-muted-foreground flex items-center justify-end gap-1">
+                              <Clock className="w-3 h-3" />
+                              {booking.booking_time}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {booking.status === "pending" ? (
+                              <>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateBookingStatus(booking.id, "confirmed");
+                                    }}
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateBookingStatus(booking.id, "cancelled");
+                                    }}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </motion.div>
+                              </>
+                            ) : (
+                              <motion.span 
+                                className={`px-4 py-2 rounded-full text-xs font-semibold ${
+                                  booking.status === "confirmed"
+                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                    : booking.status === "cancelled"
+                                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                }`}
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                {booking.status === "confirmed" 
+                                  ? "✓ Potwierdzona" 
+                                  : booking.status === "cancelled"
+                                  ? "✗ Anulowana"
+                                  : "Oczekuje"}
+                              </motion.span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
