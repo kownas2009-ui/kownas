@@ -7,54 +7,81 @@ const testimonials = [
     role: "Uczennica liceum",
     content: "Dzięki pani Anecie zdałam maturę rozszerzoną z chemii na 85%! Tłumaczy cierpliwie i zawsze znajduje czas na dodatkowe pytania.",
     rating: 5,
-    avatar: null,
-    initials: "KM",
-    color: "from-pink-400 to-rose-500"
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
   },
   {
     name: "Tomek K.",
     role: "Uczeń 8 klasy",
     content: "Chemia przestała być straszna! Teraz nawet lubię rozwiązywać zadania. Polecam każdemu!",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
-    initials: null,
-    color: null
+    avatar: null,
+    initials: "TK",
+    color: "from-blue-400 to-cyan-500"
   },
   {
     name: "Anna W.",
     role: "Mama ucznia",
     content: "Syn znacznie poprawił oceny z chemii i fizyki. Pani Aneta ma niesamowitą cierpliwość i umiejętność tłumaczenia trudnych zagadnień.",
     rating: 5,
-    avatar: null,
-    initials: "AW",
-    color: "from-emerald-400 to-teal-500"
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
   },
   {
     name: "Michał P.",
     role: "Uczeń technikum",
     content: "Profesjonalne podejście i świetne materiały. Zajęcia online są bardzo wygodne i efektywne.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=100&h=100&fit=crop",
-    initials: null,
-    color: null
+    avatar: null,
+    initials: "MP",
+    color: "from-orange-400 to-amber-500"
   },
   {
     name: "Ola S.",
     role: "Studentka chemii",
     content: "Najlepsza korepetytorka jaką miałam! Dzięki niej pokochałam chemię organiczną.",
     rating: 5,
-    avatar: null,
-    initials: "OS",
-    color: "from-violet-400 to-purple-500"
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
   },
   {
     name: "Piotr N.",
     role: "Tata uczennicy",
     content: "Córka z 2 na 5 w pół roku! Pani Aneta to prawdziwy profesjonalista.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&h=100&fit=crop",
+    avatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
     initials: null,
     color: null
+  },
+  {
+    name: "Marta J.",
+    role: "Uczennica liceum",
+    content: "Świetne przygotowanie do matury! Wszystko jasne i klarowne.",
+    rating: 5,
+    avatar: null,
+    initials: "MJ",
+    color: "from-violet-400 to-purple-500"
+  },
+  {
+    name: "Jakub L.",
+    role: "Uczeń 3 klasy liceum",
+    content: "Z chemii miałem 2, teraz mam 5. Magia!",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
+  },
+  {
+    name: "Zosia K.",
+    role: "Uczennica gimnazjum",
+    content: "Pani Aneta tłumaczy tak, że naprawdę rozumiem! Super zajęcia.",
+    rating: 5,
+    avatar: null,
+    initials: "ZK",
+    color: "from-emerald-400 to-teal-500"
   }
 ];
 

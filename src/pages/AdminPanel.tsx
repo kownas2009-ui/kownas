@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
@@ -22,19 +22,20 @@ import {
   Sparkles,
   ChevronRight,
   Phone,
-  Mail,
   GraduationCap,
   Zap,
   FlaskConical,
   Timer,
   CalendarDays,
   ListChecks,
-  FileText
+  FileText,
+  Send
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminCalendar from "@/components/admin/AdminCalendar";
 import StudentPDFGenerator from "@/components/admin/StudentPDFGenerator";
 import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
+import SendNoteDialog from "@/components/admin/SendNoteDialog";
 
 interface Booking {
   id: string;
@@ -368,11 +369,12 @@ const AdminPanel = () => {
   const fetchData = async () => {
     setLoadingData(true);
     try {
-      const { data: bookingsData, error: bookingsError } = await (supabase as any)
+      // Now that FK exists, use proper join
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from("bookings")
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             full_name,
             phone
           )
@@ -381,28 +383,25 @@ const AdminPanel = () => {
 
       if (bookingsError) throw bookingsError;
 
-      // Count unique students who have made bookings
-      const { data: studentData } = await (supabase as any)
-        .from("bookings")
-        .select("user_id")
-        .neq("status", "cancelled");
-      
-      const uniqueStudentIds = new Set(studentData?.map((b: any) => b.user_id) || []);
+      // Count unique students from bookings (excluding cancelled)
+      const activeBookings = (bookingsData || []).filter((b) => b.status !== "cancelled");
+      const uniqueStudentIds = new Set(activeBookings.map((b) => b.user_id));
       const studentsCount = uniqueStudentIds.size;
 
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const pendingCount = bookingsData?.filter((b: Booking) => b.status === "pending").length || 0;
-      const confirmedCount = bookingsData?.filter((b: Booking) => b.status === "confirmed").length || 0;
-      const thisWeekCount = bookingsData?.filter((b: Booking) => {
+      const pendingCount = (bookingsData || []).filter((b) => b.status === "pending").length;
+      const confirmedCount = (bookingsData || []).filter((b) => b.status === "confirmed").length;
+      const thisWeekCount = (bookingsData || []).filter((b) => {
         const date = new Date(b.booking_date);
         return date >= today && date <= weekLater;
-      }).length || 0;
+      }).length;
 
       setBookings(bookingsData || []);
       setStats({
-        totalStudents: studentsCount || 0,
+        totalStudents: studentsCount,
         pendingBookings: pendingCount,
         confirmedBookings: confirmedCount,
         thisWeekBookings: thisWeekCount
@@ -417,7 +416,7 @@ const AdminPanel = () => {
 
   const updateBookingStatus = async (id: string, status: "confirmed" | "cancelled") => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("bookings")
         .update({ status })
         .eq("id", id);
@@ -707,31 +706,44 @@ const AdminPanel = () => {
                     </div>
                   </div>
 
-                  {selectedBookingDetails.status === "pending" && (
-                    <div className="flex gap-3 pt-4">
-                      <Button
-                        className="flex-1 gap-2"
-                        onClick={() => {
-                          updateBookingStatus(selectedBookingDetails.id, "confirmed");
-                          setSelectedBookingDetails(null);
-                        }}
-                      >
-                        <Check className="w-4 h-4" />
-                        Potwierdź
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap gap-3 pt-4">
+                    {selectedBookingDetails.status === "pending" && (
+                      <>
+                        <Button
+                          className="flex-1 gap-2"
+                          onClick={() => {
+                            updateBookingStatus(selectedBookingDetails.id, "confirmed");
+                            setSelectedBookingDetails(null);
+                          }}
+                        >
+                          <Check className="w-4 h-4" />
+                          Potwierdź
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            updateBookingStatus(selectedBookingDetails.id, "cancelled");
+                            setSelectedBookingDetails(null);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                          Anuluj
+                        </Button>
+                      </>
+                    )}
+                    {/* Send note button */}
+                    <SendNoteDialog
+                      studentUserId={selectedBookingDetails.user_id}
+                      studentName={selectedBookingDetails.profiles?.full_name || "Uczeń"}
+                    >
+                      <Button variant="outline" className="flex-1 gap-2">
+                        <Send className="w-4 h-4" />
+                        Wyślij notatkę
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50"
-                        onClick={() => {
-                          updateBookingStatus(selectedBookingDetails.id, "cancelled");
-                          setSelectedBookingDetails(null);
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                        Anuluj
-                      </Button>
-                    </div>
-                  )}
+                    </SendNoteDialog>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

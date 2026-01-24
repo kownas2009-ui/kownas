@@ -8,6 +8,7 @@ import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import CustomCursor from "@/components/CustomCursor";
+import InteractivePeriodicTable from "@/components/InteractivePeriodicTable";
 import { FloatingAtom, BubblingBeaker, DNAHelix, TestTube, BenzeneRing, FloatingFormula } from "@/components/ChemistryAnimations";
 import { motion } from "framer-motion";
 
@@ -124,6 +125,7 @@ const Index = () => {
         <section id="contact">
           <Contact />
         </section>
+        <InteractivePeriodicTable />
       </main>
       <Footer />
     </div>

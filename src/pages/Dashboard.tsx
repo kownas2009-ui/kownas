@@ -8,13 +8,13 @@ import { pl } from "date-fns/locale";
 import { 
   LogOut, 
   Calendar, 
-  User, 
   Clock, 
   Atom,
   BookOpen,
   Loader2
 } from "lucide-react";
 import BookingDialog from "@/components/BookingDialog";
+import StudentNotes from "@/components/StudentNotes";
 
 interface Booking {
   id: string;
@@ -141,8 +141,9 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Book New Lesson */}
-            <div className="lg:col-span-1">
+            {/* Left column - Book + Notes */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Book New Lesson */}
               <div className="p-6 rounded-2xl bg-card border border-border shadow-soft">
                 <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center mb-4">
                   <BookOpen className="w-6 h-6 text-primary-foreground" />
@@ -160,6 +161,9 @@ const Dashboard = () => {
                   </Button>
                 </BookingDialog>
               </div>
+
+              {/* Notes from Aneta */}
+              <StudentNotes />
             </div>
 
             {/* Upcoming Lessons */}
