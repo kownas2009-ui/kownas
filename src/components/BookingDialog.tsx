@@ -54,12 +54,14 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
       const dateStr = format(selectedDate, "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("bookings")
-        .select("booking_time")
-        .eq("booking_date", dateStr)
-        .neq("status", "cancelled");
+        .select("booking_time, status")
+        .eq("booking_date", dateStr);
+      
+      // Filter out cancelled bookings on client side to ensure cancelled slots are available
+      const activeBookings = data?.filter(b => b.status !== "cancelled") || [];
       
       if (error) throw error;
-      setBookedSlots(data?.map(b => b.booking_time) || []);
+      setBookedSlots(activeBookings.map(b => b.booking_time));
     } catch (error) {
       console.error("Error fetching slots:", error);
       setBookedSlots([]);

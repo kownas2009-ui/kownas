@@ -97,7 +97,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          Pomogę Ci zrozumieć i pokochać chemię oraz fizykę. Indywidualne podejście, cierpliwość i pasja do nauki — to moja recepta na sukces.
+          Pomogę Ci zrozumieć i polubić chemię oraz fizykę. 95% skuteczności zdanych matur! Indywidualne podejście i cierpliwość — to moja recepta na sukces.
         </motion.p>
 
         {/* CTA Buttons with neon effects */}

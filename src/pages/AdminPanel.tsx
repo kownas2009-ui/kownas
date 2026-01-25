@@ -37,6 +37,7 @@ import StudentPDFGenerator from "@/components/admin/StudentPDFGenerator";
 import MonthlyStats from "@/components/admin/MonthlyStats";
 import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
 import SendNoteDialog from "@/components/admin/SendNoteDialog";
+import UserManagement from "@/components/admin/UserManagement";
 
 interface Booking {
   id: string;
@@ -344,7 +345,7 @@ const AdminPanel = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users">("list");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
 
   useEffect(() => {
@@ -604,7 +605,7 @@ const AdminPanel = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar")} className="w-auto">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar" | "users")} className="w-auto">
             <TabsList className="bg-card/80 backdrop-blur-sm">
               <TabsTrigger value="list" className="gap-2">
                 <ListChecks className="w-4 h-4" />
@@ -613,6 +614,10 @@ const AdminPanel = () => {
               <TabsTrigger value="calendar" className="gap-2">
                 <CalendarDays className="w-4 h-4" />
                 Kalendarz
+              </TabsTrigger>
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="w-4 h-4" />
+                Konta
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -756,7 +761,16 @@ const AdminPanel = () => {
 
         {/* Content based on active tab */}
         <AnimatePresence mode="wait">
-          {activeTab === "calendar" ? (
+          {activeTab === "users" ? (
+            <motion.div
+              key="users"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <UserManagement />
+            </motion.div>
+          ) : activeTab === "calendar" ? (
             <motion.div
               key="calendar"
               initial={{ opacity: 0, x: 20 }}
