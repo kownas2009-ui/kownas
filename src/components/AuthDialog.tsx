@@ -471,11 +471,11 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
               description: "To konto już istnieje. Spróbuj się zalogować lub użyj opcji 'Zapomniałeś hasła?'",
               variant: "destructive",
             });
-          } else if (errorMsg.includes("phone") || errorMsg.includes("unique")) {
+          } else if (errorMsg.includes("phone") || errorMsg.includes("unique") || errorMsg.includes("duplicate") || errorMsg.includes("database")) {
             setErrors({ phone: "Ten numer telefonu jest już używany. Wpisz inny numer." });
             toast({
               title: "Numer telefonu zajęty",
-              description: "Ten numer telefonu jest już przypisany do innego konta.",
+              description: "Ten numer telefonu jest już używany. Wpisz inny numer.",
               variant: "destructive",
             });
           } else {
