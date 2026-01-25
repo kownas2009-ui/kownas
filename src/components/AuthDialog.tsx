@@ -169,22 +169,12 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setIsLoading(true);
     
     try {
+      // Use Supabase's built-in password reset - works without verified domain
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (resetError) throw resetError;
-
-      const response = await supabase.functions.invoke("send-password-reset", {
-        body: {
-          email: email.trim(),
-          resetUrl: `${window.location.origin}/reset-password`,
-        },
-      });
-
-      if (response.error) {
-        console.warn("Custom email failed, using Supabase default:", response.error);
-      }
 
       setView("reset-sent");
     } catch (error: any) {
