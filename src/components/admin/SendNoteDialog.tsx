@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Send, Loader2, FileText } from "lucide-react";
+import { Send, Loader2, FileText, Paperclip, X } from "lucide-react";
 import { z } from "zod";
 
 const noteSchema = z.object({
@@ -36,6 +35,49 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [errors, setErrors] = useState<{ title?: string; body?: string }>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Max 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Plik jest za duży (max 10MB)");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadFile = async (): Promise<string | null> => {
+    if (!selectedFile) return null;
+
+    const fileExt = selectedFile.name.split('.').pop();
+    const fileName = `${studentUserId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("note-attachments")
+      .upload(fileName, selectedFile);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw new Error("Błąd podczas przesyłania pliku");
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("note-attachments")
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +96,12 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
 
     setIsLoading(true);
     try {
+      let fileUrl: string | null = null;
+      
+      if (selectedFile) {
+        fileUrl = await uploadFile();
+      }
+
       const { error } = await (supabase as any)
         .from("student_notes")
         .insert({
@@ -61,6 +109,7 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
           created_by_user_id: user!.id,
           title: validation.data.title,
           body: validation.data.body,
+          file_url: fileUrl,
         });
 
       if (error) throw error;
@@ -68,6 +117,7 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
       toast.success("Notatka wysłana!");
       setTitle("");
       setBody("");
+      setSelectedFile(null);
       setIsOpen(false);
       onSuccess?.();
     } catch (error) {
@@ -123,6 +173,44 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
             <p className="text-xs text-muted-foreground mt-1 text-right">
               {body.length}/5000
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Załącznik (opcjonalnie)</label>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={isLoading}
+            />
+            
+            {selectedFile ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border border-border">
+                <Paperclip className="w-4 h-4 text-primary" />
+                <span className="flex-1 text-sm truncate">{selectedFile.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  disabled={isLoading}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                className="w-full"
+              >
+                <Paperclip className="w-4 h-4 mr-2" />
+                Dodaj plik (max 10MB)
+              </Button>
+            )}
           </div>
 
           <Button
