@@ -46,7 +46,8 @@ const facts = [
 ];
 
 const ChemistryFacts = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Randomize initial index on mount
+  const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * facts.length));
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
   useEffect(() => {

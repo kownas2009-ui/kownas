@@ -243,10 +243,20 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                 <Mail className="w-10 h-10 text-primary" />
               </motion.div>
               <h3 className="font-display text-2xl font-bold mb-2">Sprawdź swoją skrzynkę!</h3>
-              <p className="text-muted-foreground font-body mb-6">
+              <p className="text-muted-foreground font-body mb-4">
                 Wysłaliśmy link do resetowania hasła na adres:<br />
                 <strong className="text-foreground">{email}</strong>
               </p>
+              <motion.div
+                className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 text-left"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                  ⚠️ <strong>Uwaga:</strong> Jeśli nie widzisz wiadomości, sprawdź folder <strong>SPAM</strong> lub <strong>Oferty</strong> w swojej skrzynce pocztowej.
+                </p>
+              </motion.div>
               <Button
                 variant="outline"
                 onClick={() => {
