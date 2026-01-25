@@ -473,43 +473,63 @@ const MessagesTab = () => {
             </div>
 
             <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-              {/* Student messages - parse multiple messages */}
-              {selectedMessage.message && selectedMessage.message.trim() && selectedMessage.message.split('\n---\n').map((msg, index) => {
-                if (!msg.trim()) return null;
-                // Parse timestamp from message format: [timestamp] message
-                const timestampMatch = msg.match(/^\[(.+?)\]\s/);
-                const messageContent = timestampMatch ? msg.replace(/^\[.+?\]\s/, '') : msg;
-                if (!messageContent.trim()) return null;
+              {/* All messages chronologically sorted */}
+              {(() => {
+                const allMessages: { content: string; timestamp: string | null; sender: 'student' | 'admin' }[] = [];
                 
-                return (
-                  <div key={`student-${index}`} className="bg-muted/30 rounded-2xl p-4">
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {selectedMessage.sender_name}
-                    </p>
-                    <p className="whitespace-pre-wrap">{messageContent}</p>
-                  </div>
-                );
-              })}
-
-              {/* Admin replies - parse multiple replies */}
-              {selectedMessage.admin_reply && selectedMessage.admin_reply.split('\n---\n').map((reply, index) => {
-                if (!reply.trim()) return null;
-                // Parse timestamp from reply format: [timestamp] message
-                const timestampMatch = reply.match(/^\[(.+?)\]\s/);
-                const messageContent = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
-                if (!messageContent.trim()) return null;
+                // Parse student messages
+                if (selectedMessage.message && selectedMessage.message.trim()) {
+                  selectedMessage.message.split('\n---\n').forEach((msg) => {
+                    if (!msg.trim()) return;
+                    const timestampMatch = msg.match(/^\[(.+?)\]\s/);
+                    const timestamp = timestampMatch ? timestampMatch[1] : null;
+                    const content = timestampMatch ? msg.replace(/^\[.+?\]\s/, '') : msg;
+                    if (content.trim()) {
+                      allMessages.push({ content, timestamp: timestamp || selectedMessage.created_at, sender: 'student' });
+                    }
+                  });
+                }
                 
-                return (
-                  <div key={`admin-${index}`} className="bg-primary/10 rounded-2xl p-4 ml-8">
-                    <p className="text-xs text-primary mb-2 flex items-center gap-1">
-                      <Reply className="w-3 h-3" />
-                      Twoja odpowiedź
-                    </p>
-                    <p className="whitespace-pre-wrap">{messageContent}</p>
-                  </div>
-                );
-              })}
+                // Parse admin replies
+                if (selectedMessage.admin_reply) {
+                  selectedMessage.admin_reply.split('\n---\n').forEach((reply) => {
+                    if (!reply.trim()) return;
+                    const timestampMatch = reply.match(/^\[(.+?)\]\s/);
+                    const timestamp = timestampMatch ? timestampMatch[1] : null;
+                    const content = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+                    if (content.trim()) {
+                      allMessages.push({ content, timestamp: timestamp || selectedMessage.replied_at, sender: 'admin' });
+                    }
+                  });
+                }
+                
+                // Sort by timestamp (oldest first)
+                allMessages.sort((a, b) => {
+                  const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                  const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                  return dateA - dateB;
+                });
+                
+                return allMessages.map((item, idx) => (
+                  item.sender === 'student' ? (
+                    <div key={`msg-${idx}`} className="bg-muted/30 rounded-2xl p-4">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {selectedMessage.sender_name}
+                      </p>
+                      <p className="whitespace-pre-wrap">{item.content}</p>
+                    </div>
+                  ) : (
+                    <div key={`msg-${idx}`} className="bg-primary/10 rounded-2xl p-4 ml-8">
+                      <p className="text-xs text-primary mb-2 flex items-center gap-1">
+                        <Reply className="w-3 h-3" />
+                        Twoja odpowiedź
+                      </p>
+                      <p className="whitespace-pre-wrap">{item.content}</p>
+                    </div>
+                  )
+                ));
+              })()}
             </div>
 
             {/* Reply input */}
