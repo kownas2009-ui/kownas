@@ -14,7 +14,10 @@ import {
   BookOpen,
   CheckCircle,
   Clock as ClockIcon,
-  Mail
+  Mail,
+  Pencil,
+  Save,
+  X
 } from "lucide-react";
 import {
   AlertDialog,
@@ -37,6 +40,7 @@ interface UserProfile {
   phone: string | null;
   email?: string;
   created_at: string;
+  updated_at: string;
   lesson_count: number;
   is_admin?: boolean;
   is_verified?: boolean;
@@ -47,6 +51,8 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingPhone, setEditingPhone] = useState<string | null>(null);
+  const [editPhoneValue, setEditPhoneValue] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -93,17 +99,18 @@ const UserManagement = () => {
       // Users who verified their email will have updated_at different from created_at
       // More reliable: check if user has any successful bookings (means they logged in = verified)
       
-      // Combine data - mark as verified if they have bookings OR their updated_at differs from created_at
+      // Combine data - admin accounts are always verified, others based on activity
       const usersWithCounts = (profiles || []).map(p => {
+        const isAdminAccount = adminUserIds.has(p.user_id);
         const hasBookings = (lessonCounts[p.user_id] || 0) > 0;
         const profileUpdated = new Date(p.updated_at).getTime() !== new Date(p.created_at).getTime();
         
         return {
           ...p,
           lesson_count: lessonCounts[p.user_id] || 0,
-          is_admin: adminUserIds.has(p.user_id),
-          // Consider verified if they have bookings or profile was updated (which means they logged in)
-          is_verified: hasBookings || profileUpdated
+          is_admin: isAdminAccount,
+          // Admin accounts are always verified, others need activity proof
+          is_verified: isAdminAccount || hasBookings || profileUpdated
         };
       });
 
@@ -158,6 +165,23 @@ const UserManagement = () => {
       toast.error("Błąd podczas usuwania konta");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleUpdatePhone = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ phone: editPhoneValue.trim() || null })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+      toast.success("Numer telefonu zaktualizowany");
+      setEditingPhone(null);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating phone:", error);
+      toast.error("Błąd podczas aktualizacji telefonu");
     }
   };
 
@@ -219,10 +243,29 @@ const UserManagement = () => {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              {user.phone && (
-                <span className="flex items-center gap-1">
+              {editingPhone === user.id ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editPhoneValue}
+                    onChange={(e) => setEditPhoneValue(e.target.value)}
+                    placeholder="+48..."
+                    className="h-7 w-32 text-xs"
+                  />
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleUpdatePhone(user.user_id)}>
+                    <Save className="w-3 h-3 text-green-600" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPhone(null)}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <span 
+                  className="flex items-center gap-1 cursor-pointer hover:text-primary"
+                  onClick={() => { setEditingPhone(user.id); setEditPhoneValue(user.phone || ""); }}
+                >
                   <Phone className="w-3 h-3" />
-                  {user.phone}
+                  {user.phone || "Brak telefonu"}
+                  <Pencil className="w-3 h-3 ml-1 opacity-50" />
                 </span>
               )}
               <span className="flex items-center gap-1">

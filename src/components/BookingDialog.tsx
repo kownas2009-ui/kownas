@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, isSaturday, isSunday } from "date-fns";
 import { pl } from "date-fns/locale";
 import { CalendarIcon, Clock, CheckCircle } from "lucide-react";
@@ -46,6 +46,24 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [blockedDays, setBlockedDays] = useState<string[]>([]);
+
+  // Fetch blocked days on mount
+  useEffect(() => {
+    const fetchBlockedDays = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("blocked_days")
+          .select("blocked_date");
+        
+        if (error) throw error;
+        setBlockedDays((data || []).map(d => d.blocked_date));
+      } catch (error) {
+        console.error("Error fetching blocked days:", error);
+      }
+    };
+    fetchBlockedDays();
+  }, []);
 
   // Fetch booked slots for selected date
   const fetchBookedSlots = async (selectedDate: Date) => {
@@ -149,8 +167,10 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
     }
   };
 
-  // Only allow weekends
+  // Only allow weekends that are not blocked
   const isWeekend = (date: Date) => isSaturday(date) || isSunday(date);
+  const isBlocked = (date: Date) => blockedDays.includes(format(date, "yyyy-MM-dd"));
+  const isDateDisabled = (date: Date) => date < new Date() || !isWeekend(date) || isBlocked(date);
 
   return (
     <>
@@ -215,9 +235,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
                     mode="single"
                     selected={date}
                     onSelect={handleDateSelect}
-                    disabled={(date) =>
-                      date < new Date() || !isWeekend(date)
-                    }
+                    disabled={isDateDisabled}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />

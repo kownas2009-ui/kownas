@@ -69,6 +69,7 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, "Hasło musi zawierać cyfrę");
 
 const fullNameSchema = z.string().trim().min(2, "Imię i nazwisko wymagane").max(100, "Max 100 znaków");
+const phoneSchema = z.string().trim().min(9, "Numer telefonu wymagany").max(20, "Max 20 znaków").regex(/^[\d\s\+\-\(\)]+$/, "Nieprawidłowy format numeru");
 
 // Rate limiting configuration
 const MAX_ATTEMPTS = 5;
@@ -83,7 +84,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
+  const [phone, setPhone] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; phone?: string }>({});
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   
   // Rate limiting state
@@ -144,6 +146,10 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
       const nameResult = fullNameSchema.safeParse(fullName);
       if (!nameResult.success) {
         newErrors.fullName = nameResult.error.errors[0]?.message;
+      }
+      const phoneResult = phoneSchema.safeParse(phone);
+      if (!phoneResult.success) {
+        newErrors.phone = phoneResult.error.errors[0]?.message;
       }
     }
 
@@ -250,7 +256,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
-        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim());
+        const { error, data } = await signUp(email.trim().toLowerCase(), password, fullName.trim());
         if (error) {
           toast({
             title: "Błąd rejestracji",
@@ -258,6 +264,13 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             variant: "destructive",
           });
         } else {
+          // Update profile with phone number
+          if (data?.user?.id) {
+            await supabase
+              .from("profiles")
+              .update({ phone: phone.trim() })
+              .eq("user_id", data.user.id);
+          }
           toast({
             title: "Sprawdź swoją skrzynkę email! 📧",
             description: "Wysłaliśmy link weryfikacyjny na podany adres email. Kliknij w link, aby aktywować konto.",
@@ -282,6 +295,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setEmail("");
     setPassword("");
     setFullName("");
+    setPhone("");
     setErrors({});
     setEmailWarning(null);
     setView("login");
@@ -445,22 +459,43 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4"
                   >
-                    <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                      Imię i nazwisko
-                    </label>
-                    <Input
-                      placeholder="Jan Kowalski"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="bg-card"
-                      disabled={isLoading || isLockedOut}
-                      maxLength={100}
-                      autoComplete="name"
-                    />
-                    {errors.fullName && (
-                      <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
-                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                        Imię i nazwisko
+                      </label>
+                      <Input
+                        placeholder="Jan Kowalski"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="bg-card"
+                        disabled={isLoading || isLockedOut}
+                        maxLength={100}
+                        autoComplete="name"
+                      />
+                      {errors.fullName && (
+                        <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                        Numer telefonu
+                      </label>
+                      <Input
+                        type="tel"
+                        placeholder="+48 123 456 789"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="bg-card"
+                        disabled={isLoading || isLockedOut}
+                        maxLength={20}
+                        autoComplete="tel"
+                      />
+                      {errors.phone && (
+                        <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                      )}
+                    </div>
                   </motion.div>
                 )}
                 

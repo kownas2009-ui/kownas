@@ -31,7 +31,8 @@ import {
   FileText,
   Send,
   CreditCard,
-  Banknote
+  Banknote,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminCalendar from "@/components/admin/AdminCalendar";
@@ -40,6 +41,8 @@ import MonthlyStats from "@/components/admin/MonthlyStats";
 import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
 import SendNoteDialog from "@/components/admin/SendNoteDialog";
 import UserManagement from "@/components/admin/UserManagement";
+import MessagesTab from "@/components/admin/MessagesTab";
+import BlockedDaysManager from "@/components/admin/BlockedDaysManager";
 
 interface Booking {
   id: string;
@@ -348,7 +351,7 @@ const AdminPanel = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users" | "messages">("list");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
 
   useEffect(() => {
@@ -630,7 +633,7 @@ const AdminPanel = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar" | "users")} className="w-auto">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar" | "users" | "messages")} className="w-auto">
             <TabsList className="bg-card/80 backdrop-blur-sm">
               <TabsTrigger value="list" className="gap-2">
                 <ListChecks className="w-4 h-4" />
@@ -643,6 +646,10 @@ const AdminPanel = () => {
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Konta
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Wiadomości
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -832,13 +839,24 @@ const AdminPanel = () => {
 
         {/* Content based on active tab */}
         <AnimatePresence mode="wait">
-          {activeTab === "users" ? (
+          {activeTab === "messages" ? (
+            <motion.div
+              key="messages"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <MessagesTab />
+            </motion.div>
+          ) : activeTab === "users" ? (
             <motion.div
               key="users"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
             >
+              <BlockedDaysManager />
               <UserManagement />
             </motion.div>
           ) : activeTab === "calendar" ? (

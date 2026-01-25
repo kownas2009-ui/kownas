@@ -1,11 +1,85 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Calendar, Video, Send, Phone, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { Mail, Calendar, Video, Send, Phone, Sparkles, Loader2, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import MoleculeDecoration from "./MoleculeDecoration";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const messageSchema = z.object({
+  name: z.string().trim().min(2, "Imię jest wymagane").max(100, "Max 100 znaków"),
+  email: z.string().trim().email("Nieprawidłowy email").max(255, "Max 255 znaków"),
+  phone: z.string().trim().max(20, "Max 20 znaków").optional(),
+  message: z.string().trim().min(10, "Wiadomość musi mieć min. 10 znaków").max(2000, "Max 2000 znaków"),
+});
 
 const Contact = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = messageSchema.safeParse({ name, email, phone, message });
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) {
+          newErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("contact_messages")
+        .insert({
+          sender_name: name.trim(),
+          sender_email: email.trim(),
+          sender_phone: phone.trim() || null,
+          message: message.trim(),
+        });
+
+      if (error) throw error;
+
+      setIsSuccess(true);
+      toast({
+        title: "Wiadomość wysłana! ✓",
+        description: "Odpowiem najszybciej jak to możliwe.",
+      });
+      
+      // Reset form after delay
+      setTimeout(() => {
+        setName("");
+        setEmail("");
+        setPhone("");
+        setMessage("");
+        setIsSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Błąd",
+        description: "Nie udało się wysłać wiadomości. Spróbuj ponownie.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <section className="py-24 px-4 bg-card/50 relative overflow-hidden">
       {/* Background decoration */}
@@ -159,73 +233,152 @@ const Contact = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <form className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-4">
+            <AnimatePresence mode="wait">
+              {isSuccess ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 }}
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-center py-12"
                 >
-                  <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                    Imię
-                  </label>
-                  <Input placeholder="Twoje imię" className="bg-card" />
+                  <motion.div
+                    className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", delay: 0.2 }}
+                  >
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  </motion.div>
+                  <h3 className="font-display text-2xl font-bold mb-2">Wiadomość wysłana!</h3>
+                  <p className="text-muted-foreground">
+                    Dziękuję za kontakt. Odpowiem najszybciej jak to możliwe.
+                  </p>
                 </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 }}
+              ) : (
+                <motion.form
+                  key="form"
+                  onSubmit={handleSubmit}
+                  className="space-y-6"
                 >
-                  <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                    Telefon
-                  </label>
-                  <Input placeholder="+48 ..." className="bg-card" />
-                </motion.div>
-              </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                        Imię *
+                      </label>
+                      <Input 
+                        placeholder="Twoje imię" 
+                        className="bg-card"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={isLoading}
+                        maxLength={100}
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                      )}
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                        Telefon
+                      </label>
+                      <Input 
+                        placeholder="+48 ..." 
+                        className="bg-card"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        disabled={isLoading}
+                        maxLength={20}
+                      />
+                      {errors.phone && (
+                        <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                      )}
+                    </motion.div>
+                  </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                  Email
-                </label>
-                <Input type="email" placeholder="twoj@email.pl" className="bg-card" />
-              </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                      Email *
+                    </label>
+                    <Input 
+                      type="email" 
+                      placeholder="twoj@email.pl" 
+                      className="bg-card"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      maxLength={255}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                    )}
+                  </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
-              >
-                <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                  Wiadomość
-                </label>
-                <Textarea
-                  placeholder="Opisz swoje potrzeby, poziom nauki, dostępność..."
-                  className="bg-card min-h-[120px]"
-                />
-              </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                      Wiadomość *
+                    </label>
+                    <Textarea
+                      placeholder="Opisz swoje potrzeby, poziom nauki, dostępność..."
+                      className="bg-card min-h-[120px]"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      disabled={isLoading}
+                      maxLength={2000}
+                    />
+                    {errors.message && (
+                      <p className="text-sm text-destructive mt-1">{errors.message}</p>
+                    )}
+                  </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button variant="hero" size="lg" className="w-full group">
-                  <Send className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                  Wyślij wiadomość
-                </Button>
-              </motion.div>
-            </form>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button 
+                      type="submit"
+                      variant="hero" 
+                      size="lg" 
+                      className="w-full group"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                          Wyślij wiadomość
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>
