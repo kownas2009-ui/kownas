@@ -78,7 +78,7 @@ const LOCKOUT_DURATION_MS = 60000; // 1 minute
 // Debounce registration to prevent rate limits
 const REGISTRATION_COOLDOWN_MS = 3000; // 3 seconds between registration attempts
 
-type AuthView = "login" | "register" | "forgot-password" | "reset-sent" | "resend-verification";
+type AuthView = "login" | "register" | "forgot-password" | "reset-sent" | "registration-success";
 
 const AuthDialog = ({ children }: AuthDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -200,7 +200,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   };
 
   const handleResendVerification = async () => {
-    const emailResult = emailSchema.safeParse(email);
+    const emailToUse = email.trim() || registeredEmail;
+    
+    const emailResult = emailSchema.safeParse(emailToUse);
     if (!emailResult.success) {
       setErrors({ email: emailResult.error.errors[0]?.message });
       return;
@@ -211,7 +213,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
       // Use Supabase resend confirmation - this re-sends the verification email
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email.trim().toLowerCase(),
+        email: emailToUse.toLowerCase(),
         options: {
           emailRedirectTo: window.location.origin,
         }
@@ -230,7 +232,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
       } else {
         toast({
           title: "Email wysłany! 📧",
-          description: `Link weryfikacyjny został wysłany na ${email.trim().toLowerCase()}. Sprawdź folder SPAM!`,
+          description: `Link weryfikacyjny został wysłany na ${emailToUse.toLowerCase()}. Sprawdź folder SPAM!`,
           duration: 10000,
         });
       }
@@ -294,9 +296,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
               errorMsg.includes("not confirmed") ||
               errorMsg.includes("confirm your email") ||
               errorMsg.includes("verify your email")) {
-            // Save email and show resend verification view
+            // Save email and show registration success view with resend option
             setRegisteredEmail(email.trim().toLowerCase());
-            setView("resend-verification");
+            setView("registration-success");
             // Don't count this as a failed attempt
             setAttempts(Math.max(0, newAttempts - 1));
           } else if (newAttempts >= MAX_ATTEMPTS) {
@@ -405,8 +407,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             duration: 10000,
           });
           
-          // Show resend verification view instead of closing
-          setView("resend-verification");
+          // Show registration success view with resend option
+          setView("registration-success");
         }
       }
     } catch {
@@ -485,83 +487,61 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                 Wróć do logowania
               </Button>
             </motion.div>
-          ) : view === "resend-verification" ? (
+          ) : view === "registration-success" ? (
             <motion.div
-              key="resend-verification"
+              key="registration-success"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="py-4"
+              className="text-center py-6"
             >
-              <DialogHeader>
-                <DialogTitle className="font-display text-2xl flex items-center gap-2">
-                  <Mail className="w-6 h-6 text-amber-500" />
-                  Konto wymaga weryfikacji
-                </DialogTitle>
-                <DialogDescription className="font-body">
-                  Twój email nie został jeszcze potwierdzony
-                </DialogDescription>
-              </DialogHeader>
-
               <motion.div
-                className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 my-4"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.2 }}
               >
-                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-                  ⚠️ Konto <strong>{registeredEmail || email}</strong> nie zostało jeszcze zweryfikowane. 
-                  Sprawdź swoją skrzynkę email (również folder <strong>SPAM</strong> lub <strong>Oferty</strong>) 
-                  i kliknij w link aktywacyjny.
-                </p>
+                <Mail className="w-8 h-8 text-green-500" />
               </motion.div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                    Email do ponownego wysłania linku
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="twoj@email.pl"
-                    value={email || registeredEmail}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-card"
-                    disabled={resendLoading}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                <Button
+              <h3 className="font-display text-xl font-bold mb-2">Sprawdź swoją skrzynkę!</h3>
+              <p className="text-muted-foreground font-body text-sm mb-4">
+                Wysłaliśmy link weryfikacyjny na:<br />
+                <strong className="text-foreground">{registeredEmail || email}</strong>
+              </p>
+              <p className="text-xs text-muted-foreground mb-6">
+                Sprawdź też folder SPAM lub Oferty
+              </p>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setView("login");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+                className="gap-2 mb-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Przejdź do logowania
+              </Button>
+              
+              <div className="border-t pt-4 mt-2">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Nie przyszedł email weryfikujący?
+                </p>
+                <button
+                  type="button"
                   onClick={handleResendVerification}
-                  variant="hero"
-                  size="lg"
-                  className="w-full"
                   disabled={resendLoading}
+                  className="text-xs text-primary hover:underline font-body inline-flex items-center gap-1"
                 >
                   {resendLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
-                    <>
-                      <Mail className="w-5 h-5 mr-2" />
-                      Wyślij ponownie link weryfikacyjny
-                    </>
+                    <Mail className="w-3 h-3" />
                   )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setView("login");
-                    setErrors({});
-                  }}
-                  className="w-full gap-2"
-                  disabled={resendLoading}
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Wróć do logowania
-                </Button>
+                  Wyślij ponownie
+                </button>
               </div>
             </motion.div>
           ) : view === "forgot-password" ? (
@@ -793,15 +773,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                 )}
 
                 {view === "login" && (
-                  <div className="flex justify-between items-center">
-                    <button
-                      type="button"
-                      onClick={() => setView("resend-verification")}
-                      className="text-sm text-amber-600 dark:text-amber-400 hover:underline font-body"
-                      disabled={isLoading}
-                    >
-                      Nie masz weryfikacji?
-                    </button>
+                  <div className="text-right">
                     <button
                       type="button"
                       onClick={() => setView("forgot-password")}
