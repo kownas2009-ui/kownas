@@ -69,7 +69,7 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, "Hasło musi zawierać cyfrę");
 
 const fullNameSchema = z.string().trim().min(2, "Imię i nazwisko wymagane").max(100, "Max 100 znaków");
-const phoneSchema = z.string().trim().min(9, "Numer telefonu wymagany").max(20, "Max 20 znaków").regex(/^[\d\s\+\-\(\)]+$/, "Nieprawidłowy format numeru");
+const phoneSchema = z.string().trim().min(9, "Numer telefonu musi mieć min. 9 cyfr").max(15, "Max 15 znaków").regex(/^[\d\s]+$/, "Wpisz tylko cyfry");
 
 // Rate limiting configuration
 const MAX_ATTEMPTS = 5;
@@ -256,21 +256,35 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     }
   };
 
+  // Normalize phone number - extract digits only for comparison
+  const normalizePhone = (phoneNumber: string): string => {
+    return phoneNumber.replace(/\D/g, '').replace(/^48/, ''); // Remove non-digits and leading 48
+  };
+
   const checkPhoneUniqueness = async (phoneNumber: string): Promise<boolean> => {
     if (!phoneNumber.trim()) return true;
     
+    const normalizedInput = normalizePhone(phoneNumber);
+    if (normalizedInput.length < 9) return true; // Too short to check
+    
+    // Check for exact match and normalized match
     const { data, error } = await supabase
       .from('profiles')
       .select('phone')
-      .eq('phone', phoneNumber.trim())
-      .maybeSingle();
+      .not('phone', 'is', null);
     
     if (error) {
       console.error('Error checking phone uniqueness:', error);
       return true; // Allow registration if check fails
     }
     
-    return !data; // Return true if phone is unique (no existing record)
+    // Check if any existing phone matches when normalized
+    const isDuplicate = data?.some(profile => {
+      const existingNormalized = normalizePhone(profile.phone || '');
+      return existingNormalized === normalizedInput;
+    });
+    
+    return !isDuplicate; // Return true if phone is unique
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -363,7 +377,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         
         setLastRegistrationAttempt(now);
         
-        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), phone.trim());
+        // Format phone with +48 prefix
+        const formattedPhone = phone.trim() ? `+48${phone.replace(/\s/g, '')}` : '';
+        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), formattedPhone);
         if (error) {
           // Handle rate limit error specifically
           if (error.message?.toLowerCase().includes("rate limit") || 
@@ -681,16 +697,25 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                       <label className="block text-sm font-medium text-foreground mb-2 font-body">
                         Numer telefonu
                       </label>
-                      <Input
-                        type="tel"
-                        placeholder="+48 123 456 789"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="bg-card"
-                        disabled={isLoading || isLockedOut}
-                        maxLength={20}
-                        autoComplete="tel"
-                      />
+                      <div className="relative flex">
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
+                          +48
+                        </span>
+                        <Input
+                          type="tel"
+                          placeholder="123 456 789"
+                          value={phone}
+                          onChange={(e) => {
+                            // Only allow digits and spaces
+                            const cleaned = e.target.value.replace(/[^\d\s]/g, '');
+                            setPhone(cleaned);
+                          }}
+                          className="bg-card rounded-l-none"
+                          disabled={isLoading || isLockedOut}
+                          maxLength={15}
+                          autoComplete="tel"
+                        />
+                      </div>
                       {errors.phone && (
                         <motion.div 
                           className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30"
