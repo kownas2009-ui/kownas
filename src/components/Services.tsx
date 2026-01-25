@@ -198,6 +198,71 @@ const Services = () => {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Payment Info Section */}
+        <motion.div
+          className="mt-16 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="text-center mb-8">
+            <h3 className="font-display text-2xl font-bold text-foreground mb-2">
+              Metody płatności
+            </h3>
+            <p className="text-muted-foreground font-body">
+              Wygodna płatność przelewem lub BLIKIEM
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Bank Transfer */}
+            <motion.div
+              className="p-6 rounded-2xl bg-card border border-border shadow-soft"
+              whileHover={{ y: -5, scale: 1.02 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center">
+                  <svg className="w-6 h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-display font-semibold text-foreground">Przelew bankowy</h4>
+                  <p className="text-sm text-muted-foreground">Płatność przed lekcją</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-4 text-sm font-mono">
+                <p className="text-muted-foreground mb-1">Nr konta:</p>
+                <p className="text-foreground font-medium tracking-wider">XX XXXX XXXX XXXX XXXX XXXX XXXX</p>
+                <p className="text-muted-foreground mt-2">Aneta Kownacka</p>
+              </div>
+            </motion.div>
+
+            {/* BLIK */}
+            <motion.div
+              className="p-6 rounded-2xl bg-card border border-border shadow-soft"
+              whileHover={{ y: -5, scale: 1.02 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-display font-semibold text-foreground">BLIK</h4>
+                  <p className="text-sm text-muted-foreground">Szybka płatność telefonem</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-4 text-sm">
+                <p className="text-muted-foreground mb-1">Numer telefonu do BLIK:</p>
+                <p className="text-foreground font-medium text-lg">507 125 569</p>
+                <p className="text-muted-foreground mt-2 text-xs">Wpisz kod BLIK w aplikacji bankowej</p>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
