@@ -381,9 +381,10 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             });
           }
         } else {
-          // Registration successful - also explicitly resend confirmation to ensure email is sent
+          // Registration successful - show resend verification view
           const userEmail = email.trim().toLowerCase();
           setRegisteredEmail(userEmail);
+          setEmail(userEmail);
           
           // Force resend confirmation email to make sure it's always sent
           try {
@@ -399,12 +400,13 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           }
           
           toast({
-            title: "Sprawdź swoją skrzynkę email! 📧",
-            description: `Wysłaliśmy link weryfikacyjny na ${userEmail}. Sprawdź również folder SPAM.`,
-            duration: 12000,
+            title: "Rejestracja udana! 🎉",
+            description: `Sprawdź skrzynkę ${userEmail} i kliknij link weryfikacyjny.`,
+            duration: 10000,
           });
-          setIsOpen(false);
-          resetForm();
+          
+          // Show resend verification view instead of closing
+          setView("resend-verification");
         }
       }
     } catch {
