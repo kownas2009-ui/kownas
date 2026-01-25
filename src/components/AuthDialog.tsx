@@ -246,7 +246,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
-        const { error, data } = await signUp(email.trim().toLowerCase(), password, fullName.trim());
+        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), phone.trim());
         if (error) {
           toast({
             title: "Błąd rejestracji",
@@ -254,13 +254,6 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             variant: "destructive",
           });
         } else {
-          // Update profile with phone number
-          if (data?.user?.id) {
-            await supabase
-              .from("profiles")
-              .update({ phone: phone.trim() })
-              .eq("user_id", data.user.id);
-          }
           toast({
             title: "Sprawdź swoją skrzynkę email! 📧",
             description: "Wysłaliśmy link weryfikacyjny na podany adres email. Kliknij w link, aby aktywować konto.",
