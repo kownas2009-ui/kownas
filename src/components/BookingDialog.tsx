@@ -47,22 +47,42 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [blockedDays, setBlockedDays] = useState<string[]>([]);
+  const [blockedTimeSlots, setBlockedTimeSlots] = useState<Record<string, string[]>>({});
 
-  // Fetch blocked days on mount
+  // Fetch blocked days and time slots on mount
   useEffect(() => {
-    const fetchBlockedDays = async () => {
+    const fetchBlockedData = async () => {
       try {
-        const { data, error } = await supabase
+        // Fetch blocked days
+        const { data: daysData, error: daysError } = await supabase
           .from("blocked_days")
           .select("blocked_date");
         
-        if (error) throw error;
-        setBlockedDays((data || []).map(d => d.blocked_date));
+        if (daysError) throw daysError;
+        setBlockedDays((daysData || []).map(d => d.blocked_date));
+
+        // Fetch blocked time slots
+        const { data: slotsData, error: slotsError } = await supabase
+          .from("blocked_time_slots")
+          .select("blocked_date, blocked_time");
+        
+        if (slotsError) throw slotsError;
+        
+        // Group by date
+        const grouped = (slotsData || []).reduce((acc, slot) => {
+          if (!acc[slot.blocked_date]) {
+            acc[slot.blocked_date] = [];
+          }
+          acc[slot.blocked_date].push(slot.blocked_time);
+          return acc;
+        }, {} as Record<string, string[]>);
+        
+        setBlockedTimeSlots(grouped);
       } catch (error) {
-        console.error("Error fetching blocked days:", error);
+        console.error("Error fetching blocked data:", error);
       }
     };
-    fetchBlockedDays();
+    fetchBlockedData();
   }, []);
 
   // Fetch booked slots for selected date
@@ -265,20 +285,24 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
                   <div className="grid grid-cols-3 gap-2">
                     {timeSlots.map((time) => {
                       const isBooked = bookedSlots.includes(time);
+                      const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                      const isBlockedTime = blockedTimeSlots[dateStr]?.includes(time) || false;
+                      const isUnavailable = isBooked || isBlockedTime;
+                      
                       return (
                         <Button
                           key={time}
                           variant={selectedTime === time ? "hero" : "outline"}
                           size="sm"
-                          onClick={() => !isBooked && setSelectedTime(time)}
+                          onClick={() => !isUnavailable && setSelectedTime(time)}
                           className={cn(
                             "font-body relative",
-                            isBooked && "opacity-50 cursor-not-allowed line-through"
+                            isUnavailable && "opacity-50 cursor-not-allowed line-through"
                           )}
-                          disabled={isBooked}
+                          disabled={isUnavailable}
                         >
                           {time}
-                          {isBooked && (
+                          {isUnavailable && (
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
                           )}
                         </Button>
