@@ -70,17 +70,22 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
     setLoadingSlots(true);
     try {
       const dateStr = format(selectedDate, "yyyy-MM-dd");
+      
+      // Query ONLY pending and confirmed bookings - cancelled slots should be free
       const { data, error } = await supabase
         .from("bookings")
-        .select("booking_time, status")
+        .select("booking_time")
         .eq("booking_date", dateStr)
-        .in("status", ["pending", "confirmed"]); // Only get active bookings (pending or confirmed)
+        .or("status.eq.pending,status.eq.confirmed");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching booked slots:", error);
+        throw error;
+      }
       
-      // Map only active bookings as booked
+      // Extract just the time strings from active bookings
       const activeSlots = (data || []).map(b => b.booking_time);
-      console.log("Active booked slots for", dateStr, ":", activeSlots);
+      console.log("Fetched active slots for", dateStr, ":", activeSlots, "raw data:", data);
       setBookedSlots(activeSlots);
     } catch (error) {
       console.error("Error fetching slots:", error);

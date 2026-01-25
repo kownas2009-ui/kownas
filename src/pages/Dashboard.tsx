@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import BookingDialog from "@/components/BookingDialog";
 import StudentNotes from "@/components/StudentNotes";
+import StudentMessaging from "@/components/dashboard/StudentMessaging";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   AlertDialog,
@@ -405,6 +406,9 @@ const Dashboard = () => {
 
                 {/* Notes from Aneta */}
                 <StudentNotes />
+                
+                {/* Messaging with Aneta */}
+                <StudentMessaging />
               </div>
 
               {/* Upcoming Lessons */}

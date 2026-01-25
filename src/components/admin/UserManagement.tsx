@@ -126,43 +126,34 @@ const UserManagement = () => {
   const handleDeleteUser = async (userId: string, profileId: string) => {
     setDeletingId(profileId);
     try {
-      // Delete all bookings for this user
-      const { error: bookingsError } = await supabase
-        .from("bookings")
-        .delete()
-        .eq("user_id", userId);
+      // Call edge function to delete user from auth.users (this cascades to all related data)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      
+      if (!token) {
+        throw new Error("No auth session");
+      }
 
-      if (bookingsError) throw bookingsError;
+      const response = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
 
-      // Delete student notes
-      const { error: notesError } = await supabase
-        .from("student_notes")
-        .delete()
-        .eq("student_user_id", userId);
+      if (response.error) {
+        console.error("Edge function error:", response.error);
+        throw new Error(response.error.message || "Failed to delete user");
+      }
 
-      if (notesError) throw notesError;
-
-      // Delete user role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (roleError) throw roleError;
-
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (profileError) throw profileError;
+      // Also clean up related tables (in case cascade didn't work)
+      await supabase.from("bookings").delete().eq("user_id", userId);
+      await supabase.from("student_notes").delete().eq("student_user_id", userId);
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      await supabase.from("profiles").delete().eq("user_id", userId);
 
       toast.success("Konto użytkownika zostało usunięte");
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting user:", error);
-      toast.error("Błąd podczas usuwania konta");
+      toast.error(error.message || "Błąd podczas usuwania konta");
     } finally {
       setDeletingId(null);
     }
