@@ -242,6 +242,12 @@ const UserManagement = () => {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              {user.email && (
+                <span className="flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  {user.email}
+                </span>
+              )}
               {editingPhone === user.id ? (
                 <div className="flex items-center gap-2">
                   <Input
