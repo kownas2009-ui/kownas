@@ -218,14 +218,20 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           setAttempts(newAttempts);
           
           // Check if the error is about email not confirmed
-          if (error.message?.toLowerCase().includes("email not confirmed") || 
-              error.message?.toLowerCase().includes("email_not_confirmed")) {
+          const errorMsg = error.message?.toLowerCase() || '';
+          if (errorMsg.includes("email not confirmed") || 
+              errorMsg.includes("email_not_confirmed") ||
+              errorMsg.includes("not confirmed") ||
+              errorMsg.includes("confirm your email") ||
+              errorMsg.includes("verify your email")) {
             toast({
-              title: "Konto nie zostało zweryfikowane",
-              description: "Sprawdź swoją skrzynkę email i kliknij w link weryfikacyjny, aby aktywować konto.",
+              title: "⚠️ Konto wymaga weryfikacji",
+              description: "Twoje konto nie zostało jeszcze zweryfikowane. Sprawdź skrzynkę email (również folder SPAM) i kliknij w link aktywacyjny.",
               variant: "destructive",
-              duration: 8000,
+              duration: 12000,
             });
+            // Don't count this as a failed attempt
+            setAttempts(Math.max(0, newAttempts - 1));
           } else if (newAttempts >= MAX_ATTEMPTS) {
             setLockedUntil(Date.now() + LOCKOUT_DURATION_MS);
             toast({
