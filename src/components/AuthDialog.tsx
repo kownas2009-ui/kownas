@@ -12,7 +12,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { LogIn, UserPlus, Loader2, ShieldAlert, KeyRound, ArrowLeft, Mail, Sparkles } from "lucide-react";
+import { LogIn, UserPlus, Loader2, ShieldAlert, KeyRound, ArrowLeft, Mail, Sparkles, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,8 +20,54 @@ interface AuthDialogProps {
   children: React.ReactNode;
 }
 
-const emailSchema = z.string().trim().email("Nieprawidłowy adres email").max(255);
-const passwordSchema = z.string().min(6, "Hasło musi mieć min. 6 znaków").max(72, "Hasło max 72 znaki");
+// Enhanced email validation with common provider check
+const commonEmailProviders = [
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'wp.pl', 'onet.pl', 
+  'interia.pl', 'o2.pl', 'tlen.pl', 'gazeta.pl', 'icloud.com', 'protonmail.com',
+  'live.com', 'aol.com', 'mail.com', 'zoho.com', 'yandex.com', 'gmx.com'
+];
+
+const isValidEmailFormat = (email: string): boolean => {
+  // Check for common typos in popular domains
+  const typoPatterns = [
+    /gmal\.com$/i, /gmial\.com$/i, /gamil\.com$/i, /gnail\.com$/i,
+    /yahooo\.com$/i, /yaho\.com$/i, /yhoo\.com$/i,
+    /outloo\.com$/i, /outlok\.com$/i,
+    /hotmal\.com$/i, /hotmai\.com$/i,
+  ];
+  
+  for (const pattern of typoPatterns) {
+    if (pattern.test(email)) {
+      return false;
+    }
+  }
+  
+  // Check if domain has valid structure (at least one dot after @)
+  const domain = email.split('@')[1];
+  if (!domain || !domain.includes('.')) return false;
+  
+  // Check domain has at least 2 chars after last dot
+  const tld = domain.split('.').pop();
+  if (!tld || tld.length < 2) return false;
+  
+  return true;
+};
+
+const emailSchema = z.string()
+  .trim()
+  .email("Nieprawidłowy adres email")
+  .max(255, "Email max 255 znaków")
+  .refine((email) => isValidEmailFormat(email), {
+    message: "Sprawdź poprawność adresu email - wygląda na błędny"
+  });
+
+const passwordSchema = z.string()
+  .min(8, "Hasło musi mieć min. 8 znaków")
+  .max(72, "Hasło max 72 znaki")
+  .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
+  .regex(/[a-z]/, "Hasło musi zawierać małą literę")
+  .regex(/[0-9]/, "Hasło musi zawierać cyfrę");
+
 const fullNameSchema = z.string().trim().min(2, "Imię i nazwisko wymagane").max(100, "Max 100 znaków");
 
 // Rate limiting configuration
@@ -38,6 +84,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
   
   // Rate limiting state
   const [attempts, setAttempts] = useState(0);
@@ -45,6 +92,23 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   
   const { signIn, signUp } = useAuth();
+
+  // Email validation on blur
+  const handleEmailBlur = () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) return;
+    
+    const domain = trimmedEmail.split('@')[1];
+    if (domain && !commonEmailProviders.includes(domain)) {
+      // Check if it's a plausible domain
+      const parts = domain.split('.');
+      if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
+        setEmailWarning(`Czy na pewno "${domain}" to poprawna domena?`);
+      }
+    } else {
+      setEmailWarning(null);
+    }
+  };
 
   // Lockout countdown timer
   useEffect(() => {
@@ -99,14 +163,12 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setIsLoading(true);
     
     try {
-      // First, trigger Supabase password reset to get the reset link
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (resetError) throw resetError;
 
-      // Also send our beautiful custom email via edge function
       const response = await supabase.functions.invoke("send-password-reset", {
         body: {
           email: email.trim(),
@@ -133,7 +195,6 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if locked out
     if (lockedUntil && Date.now() < lockedUntil) {
       toast({
         title: "Zbyt wiele prób",
@@ -151,9 +212,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
 
     try {
       if (view === "login") {
-        const { error } = await signIn(email.trim(), password);
+        const { error } = await signIn(email.trim().toLowerCase(), password);
         if (error) {
-          // Increment attempts on failed login
           const newAttempts = attempts + 1;
           setAttempts(newAttempts);
           
@@ -181,7 +241,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
-        const { error } = await signUp(email.trim(), password, fullName.trim());
+        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim());
         if (error) {
           toast({
             title: "Błąd rejestracji",
@@ -213,6 +273,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setPassword("");
     setFullName("");
     setErrors({});
+    setEmailWarning(null);
     setView("login");
   };
 
@@ -296,6 +357,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     placeholder="twoj@email.pl"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={handleEmailBlur}
                     className="bg-card"
                     required
                     disabled={isLoading}
@@ -400,7 +462,11 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     type="email"
                     placeholder="twoj@email.pl"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailWarning(null);
+                    }}
+                    onBlur={handleEmailBlur}
                     className="bg-card"
                     required
                     disabled={isLoading || isLockedOut}
@@ -409,6 +475,16 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  )}
+                  {emailWarning && !errors.email && (
+                    <motion.p 
+                      className="text-sm text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      {emailWarning}
+                    </motion.p>
                   )}
                 </div>
 
@@ -423,13 +499,18 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-card"
                     required
-                    minLength={6}
+                    minLength={8}
                     maxLength={72}
                     disabled={isLoading || isLockedOut}
                     autoComplete={view === "login" ? "current-password" : "new-password"}
                   />
                   {errors.password && (
                     <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                  )}
+                  {view === "register" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Min. 8 znaków, wielka i mała litera oraz cyfra
+                    </p>
                   )}
                 </div>
 
@@ -477,6 +558,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                   onClick={() => {
                     setView(view === "login" ? "register" : "login");
                     setErrors({});
+                    setEmailWarning(null);
                   }}
                   className="text-sm text-primary hover:underline font-body"
                   disabled={isLoading}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import AuthDialog from "./AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Atom, Menu, X, User, LogOut, Shield, BookOpen, Beaker, GraduationCap, HelpCircle, Calendar, Star, Sparkles } from "lucide-react";
+import { FlaskConical, Menu, X, User, LogOut, Shield, BookOpen, Beaker, GraduationCap, HelpCircle, Calendar, Star, Sparkles, Atom } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
@@ -65,10 +65,10 @@ const Navbar = () => {
           >
             <motion.div 
               className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center relative overflow-hidden"
-              whileHover={{ rotate: 180 }}
-              transition={{ duration: 0.5 }}
+              whileHover={{ rotate: 10 }}
+              transition={{ duration: 0.3 }}
             >
-              <Atom className="w-5 h-5 text-primary-foreground relative z-10" />
+              <FlaskConical className="w-5 h-5 text-primary-foreground relative z-10" />
               <motion.div
                 className="absolute inset-0 bg-white/20"
                 initial={{ x: "-100%" }}
