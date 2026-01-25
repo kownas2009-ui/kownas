@@ -232,10 +232,10 @@ const Services = () => {
                   <p className="text-sm text-muted-foreground">Płatność przed lekcją</p>
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-xl p-4 text-sm font-mono">
-                <p className="text-muted-foreground mb-1">Nr konta:</p>
-                <p className="text-foreground font-medium tracking-wider">XX XXXX XXXX XXXX XXXX XXXX XXXX</p>
-                <p className="text-muted-foreground mt-2">Aneta Kownacka</p>
+              <div className="bg-muted/50 rounded-xl p-4 text-sm">
+                <p className="text-muted-foreground mb-2">Nr konta:</p>
+                <p className="text-foreground font-medium">Numer konta bankowego otrzymasz w prywatnej wiadomości po potwierdzeniu rezerwacji</p>
+                <p className="text-muted-foreground mt-3 text-xs">Aneta Kownacka</p>
               </div>
             </motion.div>
 

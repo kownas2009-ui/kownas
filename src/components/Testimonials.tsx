@@ -40,7 +40,7 @@ const testimonials = [
   },
   {
     name: "Ola S.",
-    role: "Studentka chemii",
+    role: "Uczennica 3 liceum",
     content: "Najlepsza korepetytorka jaką miałam! Dzięki niej pokochałam chemię organiczną.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
@@ -79,18 +79,18 @@ const testimonials = [
     role: "Uczennica 2 liceum",
     content: "Pani Aneta tłumaczy tak, że naprawdę rozumiem! Super zajęcia.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face",
-    initials: null,
-    color: null
+    avatar: null,
+    initials: "ZK",
+    color: "from-emerald-400 to-teal-500"
   },
   {
     name: "Dawid R.",
     role: "Uczeń 1 liceum",
     content: "Wreszcie rozumiem wzory chemiczne! Nauka z panią Anetą to czysta przyjemność.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    initials: null,
-    color: null
+    avatar: null,
+    initials: "DR",
+    color: "from-amber-400 to-orange-500"
   },
   {
     name: "Magda K.",
@@ -99,16 +99,7 @@ const testimonials = [
     rating: 5,
     avatar: null,
     initials: "MK",
-    color: "from-emerald-400 to-teal-500"
-  },
-  {
-    name: "Filip W.",
-    role: "Student medycyny",
-    content: "Dzięki solidnym podstawom od pani Anety chemia na studiach to dla mnie pestka!",
-    rating: 5,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
-    initials: null,
-    color: null
+    color: "from-pink-400 to-rose-500"
   }
 ];
 
