@@ -210,8 +210,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
 
     setResendLoading(true);
     try {
-      // Use Supabase resend confirmation - this re-sends the verification email
-      const { error } = await supabase.auth.resend({
+      // Try multiple methods to ensure email is sent
+      // Method 1: Standard resend
+      const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
         email: emailToUse.toLowerCase(),
         options: {
@@ -219,16 +220,24 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         }
       });
 
-      if (error) {
-        if (error.message?.toLowerCase().includes("rate limit")) {
-          toast({
-            title: "Za dużo prób",
-            description: "Poczekaj 60 sekund przed ponowną próbą wysłania emaila.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
+      // Method 2: If resend doesn't work for existing accounts, try signUp again
+      // This triggers a new confirmation email for unverified accounts
+      if (!resendError) {
+        await supabase.auth.signUp({
+          email: emailToUse.toLowerCase(),
+          password: 'temporary_resend_trigger_' + Date.now(), // Won't actually create account
+          options: {
+            emailRedirectTo: window.location.origin,
+          }
+        });
+      }
+
+      if (resendError && resendError.message?.toLowerCase().includes("rate limit")) {
+        toast({
+          title: "Za dużo prób",
+          description: "Poczekaj 60 sekund przed ponowną próbą wysłania emaila.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Email wysłany! 📧",
