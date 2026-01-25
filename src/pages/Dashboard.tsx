@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
   LogOut, 
@@ -11,10 +12,17 @@ import {
   Clock, 
   Atom,
   BookOpen,
-  Loader2
+  Loader2,
+  Sparkles,
+  ArrowLeft,
+  CheckCircle,
+  Timer,
+  FlaskConical,
+  Beaker
 } from "lucide-react";
 import BookingDialog from "@/components/BookingDialog";
 import StudentNotes from "@/components/StudentNotes";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Booking {
   id: string;
@@ -29,6 +37,59 @@ interface Profile {
   full_name: string;
   phone: string | null;
 }
+
+// Floating molecules background
+const FloatingMolecules = () => (
+  <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    {[...Array(10)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute"
+        style={{
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+        }}
+        animate={{
+          y: [0, -20, 0],
+          x: [0, Math.random() * 15 - 7, 0],
+          rotate: [0, 360],
+          opacity: [0.1, 0.25, 0.1],
+        }}
+        transition={{
+          duration: 8 + Math.random() * 4,
+          repeat: Infinity,
+          delay: i * 0.5,
+        }}
+      >
+        <svg width={25 + Math.random() * 20} height={25 + Math.random() * 20} viewBox="0 0 50 50">
+          <circle cx="25" cy="25" r="6" className="fill-primary/15" />
+          <circle cx="12" cy="18" r="4" className="fill-secondary/15" />
+          <circle cx="38" cy="18" r="4" className="fill-secondary/15" />
+          <line x1="25" y1="25" x2="12" y2="18" className="stroke-primary/10" strokeWidth="2" />
+          <line x1="25" y1="25" x2="38" y2="18" className="stroke-primary/10" strokeWidth="2" />
+        </svg>
+      </motion.div>
+    ))}
+    
+    {/* Glowing orbs */}
+    <motion.div 
+      className="absolute top-1/4 left-1/4 w-48 h-48 bg-primary/5 rounded-full blur-3xl"
+      animate={{ 
+        scale: [1, 1.2, 1],
+        opacity: [0.2, 0.35, 0.2]
+      }}
+      transition={{ duration: 6, repeat: Infinity }}
+    />
+    <motion.div 
+      className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/5 rounded-full blur-3xl"
+      animate={{ 
+        scale: [1, 1.15, 1],
+        opacity: [0.2, 0.4, 0.2]
+      }}
+      transition={{ duration: 8, repeat: Infinity, delay: 2 }}
+    />
+  </div>
+);
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
@@ -52,8 +113,7 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoadingData(true);
     try {
-      // Fetch profile - using type assertion for newly created tables
-      const { data: profileData } = await (supabase as any)
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("full_name, phone")
         .eq("user_id", user!.id)
@@ -63,8 +123,7 @@ const Dashboard = () => {
         setProfile(profileData as Profile);
       }
 
-      // Fetch bookings - using type assertion for newly created tables
-      const { data: bookingsData } = await (supabase as any)
+      const { data: bookingsData } = await supabase
         .from("bookings")
         .select("*")
         .eq("user_id", user!.id)
@@ -88,162 +147,356 @@ const Dashboard = () => {
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Atom className="w-12 h-12 text-primary" />
+        </motion.div>
       </div>
     );
   }
 
   const upcomingBookings = bookings.filter(
-    (b) => new Date(b.booking_date) >= new Date()
+    (b) => new Date(b.booking_date) >= new Date() && b.status !== 'cancelled'
   );
   const pastBookings = bookings.filter(
     (b) => new Date(b.booking_date) < new Date()
   );
 
+  const nextLesson = upcomingBookings[0];
+  const daysUntilNext = nextLesson 
+    ? differenceInDays(new Date(nextLesson.booking_date), new Date()) 
+    : null;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <FloatingMolecules />
+      
       {/* Header */}
-      <header className="bg-card border-b border-border">
+      <motion.header 
+        className="bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-20"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 100 }}
+      >
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
-              <Atom className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Aneta</span>
-          </a>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground font-body text-sm hidden sm:block">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Strona główna</span>
+              </Button>
+            </motion.div>
+            <motion.a 
+              href="/" 
+              className="flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div 
+                className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <Atom className="w-5 h-5 text-primary-foreground" />
+              </motion.div>
+              <span className="font-display text-xl font-bold text-foreground hidden sm:block">Aneta</span>
+            </motion.a>
+          </div>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <span className="text-muted-foreground font-body text-sm hidden md:block">
               {user.email}
             </span>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Wyloguj
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Wyloguj</span>
+              </Button>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            Cześć, {profile?.full_name || "Uczniu"}! 👋
-          </h1>
-          <p className="text-muted-foreground font-body">
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Sparkles className="w-8 h-8 text-secondary" />
+            </motion.div>
+            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+              Cześć, {profile?.full_name?.split(' ')[0] || "Uczniu"}! 👋
+            </h1>
+          </div>
+          <p className="text-muted-foreground font-body text-lg">
             Zarządzaj swoimi lekcjami z chemii i fizyki
           </p>
-        </div>
+        </motion.div>
 
         {loadingData ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Atom className="w-10 h-10 text-primary" />
+            </motion.div>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left column - Book + Notes */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Book New Lesson */}
-              <div className="p-6 rounded-2xl bg-card border border-border shadow-soft">
-                <div className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center mb-4">
-                  <BookOpen className="w-6 h-6 text-primary-foreground" />
+          <>
+            {/* Stats Cards */}
+            <motion.div 
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <motion.div 
+                className="p-4 md:p-6 rounded-2xl bg-card border border-border shadow-soft"
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl gradient-hero flex items-center justify-center mb-3">
+                  <Calendar className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
                 </div>
-                <h2 className="font-display text-xl font-semibold mb-2">
-                  Umów nową lekcję
-                </h2>
-                <p className="text-muted-foreground font-body text-sm mb-4">
-                  Wybierz termin na najbliższy weekend
+                <p className="text-2xl md:text-3xl font-display font-bold text-foreground">{upcomingBookings.length}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Nadchodzące</p>
+              </motion.div>
+              
+              <motion.div 
+                className="p-4 md:p-6 rounded-2xl bg-card border border-border shadow-soft"
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center mb-3">
+                  <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-secondary-foreground" />
+                </div>
+                <p className="text-2xl md:text-3xl font-display font-bold text-foreground">{pastBookings.length}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Ukończone</p>
+              </motion.div>
+              
+              <motion.div 
+                className="p-4 md:p-6 rounded-2xl bg-card border border-border shadow-soft"
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-3">
+                  <Timer className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                </div>
+                <p className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                  {daysUntilNext !== null ? (daysUntilNext === 0 ? "Dziś!" : `${daysUntilNext} dni`) : "-"}
                 </p>
-                <BookingDialog lessonType="Lekcja" onSuccess={fetchData}>
-                  <Button variant="hero" className="w-full">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Zarezerwuj termin
-                  </Button>
-                </BookingDialog>
-              </div>
-
-              {/* Notes from Aneta */}
-              <StudentNotes />
-            </div>
-
-            {/* Upcoming Lessons */}
-            <div className="lg:col-span-2">
-              <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Nadchodzące lekcje
-              </h2>
-              {upcomingBookings.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-card border border-border text-center">
-                  <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground font-body">
-                    Brak zaplanowanych lekcji
-                  </p>
+                <p className="text-xs md:text-sm text-muted-foreground">Do następnej</p>
+              </motion.div>
+              
+              <motion.div 
+                className="p-4 md:p-6 rounded-2xl bg-card border border-border shadow-soft"
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3">
+                  <FlaskConical className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {upcomingBookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="p-4 rounded-xl bg-card border border-border shadow-soft flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <BookOpen className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-display font-semibold">
-                            {booking.lesson_type}
-                          </h3>
-                          <p className="text-sm text-muted-foreground font-body">
-                            {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })} o {booking.booking_time}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        booking.status === 'confirmed' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {booking.status === 'confirmed' ? 'Potwierdzona' : 'Oczekuje'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                <p className="text-2xl md:text-3xl font-display font-bold text-foreground">{bookings.length}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Łącznie lekcji</p>
+              </motion.div>
+            </motion.div>
 
-              {/* Past Lessons */}
-              {pastBookings.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
-                    <Clock className="w-5 h-5" />
-                    Historia lekcji
-                  </h2>
-                  <div className="space-y-3">
-                    {pastBookings.slice(0, 5).map((booking) => (
-                      <div
-                        key={booking.id}
-                        className="p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between opacity-75"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="font-display font-medium text-sm">
-                              {booking.lesson_type}
-                            </h3>
-                            <p className="text-xs text-muted-foreground font-body">
-                              {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Left column - Book + Notes */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Book New Lesson */}
+                <motion.div 
+                  className="p-6 rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-secondary/70 text-primary-foreground shadow-xl relative overflow-hidden"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  {/* Animated background */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    {[...Array(5)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute rounded-full bg-white/10"
+                        style={{
+                          width: 60 + Math.random() * 60,
+                          height: 60 + Math.random() * 60,
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                        }}
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.1, 0.2, 0.1],
+                        }}
+                        transition={{
+                          duration: 3 + Math.random() * 2,
+                          repeat: Infinity,
+                          delay: i * 0.3,
+                        }}
+                      />
                     ))}
                   </div>
-                </div>
-              )}
+                  
+                  <div className="relative z-10">
+                    <motion.div 
+                      className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4"
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    >
+                      <Beaker className="w-7 h-7 text-white" />
+                    </motion.div>
+                    <h2 className="font-display text-2xl font-bold mb-2">
+                      Umów nową lekcję
+                    </h2>
+                    <p className="text-white/80 font-body text-sm mb-5">
+                      Wybierz termin na najbliższy weekend
+                    </p>
+                    <BookingDialog lessonType="Lekcja" onSuccess={fetchData}>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button variant="accent" size="lg" className="w-full font-semibold">
+                          <Calendar className="w-5 h-5 mr-2" />
+                          Zarezerwuj termin
+                        </Button>
+                      </motion.div>
+                    </BookingDialog>
+                  </div>
+                </motion.div>
+
+                {/* Notes from Aneta */}
+                <StudentNotes />
+              </div>
+
+              {/* Upcoming Lessons */}
+              <motion.div 
+                className="lg:col-span-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Nadchodzące lekcje
+                </h2>
+                
+                <AnimatePresence mode="popLayout">
+                  {upcomingBookings.length === 0 ? (
+                    <motion.div 
+                      className="p-8 rounded-3xl bg-card border border-border text-center shadow-soft"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      </motion.div>
+                      <p className="text-muted-foreground font-body text-lg">
+                        Brak zaplanowanych lekcji
+                      </p>
+                      <p className="text-muted-foreground/70 font-body text-sm mt-2">
+                        Zarezerwuj swoją pierwszą lekcję!
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <div className="space-y-4">
+                      {upcomingBookings.map((booking, index) => (
+                        <motion.div
+                          key={booking.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileHover={{ scale: 1.01, y: -2 }}
+                          className="p-5 rounded-2xl bg-card border border-border shadow-soft flex items-center justify-between group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <motion.div 
+                              className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
+                              whileHover={{ rotate: 10 }}
+                            >
+                              <BookOpen className="w-7 h-7 text-primary" />
+                            </motion.div>
+                            <div>
+                              <h3 className="font-display font-semibold text-lg text-foreground">
+                                {booking.lesson_type}
+                              </h3>
+                              <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                {format(new Date(booking.booking_date), "EEEE, d MMMM yyyy", { locale: pl })}
+                              </p>
+                              <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                {booking.booking_time}
+                              </p>
+                            </div>
+                          </div>
+                          <motion.span 
+                            className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                              booking.status === 'confirmed' 
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                          >
+                            {booking.status === 'confirmed' ? '✓ Potwierdzona' : '⏳ Oczekuje'}
+                          </motion.span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </AnimatePresence>
+
+                {/* Past Lessons */}
+                {pastBookings.length > 0 && (
+                  <motion.div 
+                    className="mt-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-5 h-5" />
+                      Historia lekcji
+                    </h2>
+                    <div className="space-y-3">
+                      {pastBookings.slice(0, 5).map((booking, index) => (
+                        <motion.div
+                          key={booking.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3 + index * 0.05 }}
+                          whileHover={{ x: 5 }}
+                          className="p-4 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                              <BookOpen className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h3 className="font-display font-medium text-sm text-foreground/80">
+                                {booking.lesson_type}
+                              </h3>
+                              <p className="text-xs text-muted-foreground font-body">
+                                {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {booking.booking_time}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
-          </div>
+          </>
         )}
       </main>
     </div>

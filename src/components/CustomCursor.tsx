@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TrailPoint {
   id: number;
@@ -13,6 +14,7 @@ const CustomCursor = () => {
   const [trail, setTrail] = useState<TrailPoint[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
+  const isMobile = useIsMobile();
 
   const getRandomType = useCallback((): TrailPoint["type"] => {
     const types: TrailPoint["type"][] = ["spark", "dot", "ring"];
@@ -20,6 +22,9 @@ const CustomCursor = () => {
   }, []);
 
   useEffect(() => {
+    // Don't add cursor on mobile/tablet devices
+    if (isMobile) return;
+
     let lastAddTime = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -64,7 +69,10 @@ const CustomCursor = () => {
       document.removeEventListener("mouseup", handleMouseUp);
       clearInterval(cleanupInterval);
     };
-  }, [getRandomType]);
+  }, [getRandomType, isMobile]);
+
+  // Don't render anything on mobile
+  if (isMobile) return null;
 
   const renderTrailElement = (point: TrailPoint) => {
     const age = (Date.now() - point.id) / 600;
@@ -129,10 +137,12 @@ const CustomCursor = () => {
 
   return (
     <>
-      {/* Hide default cursor globally */}
+      {/* Hide default cursor globally - only on desktop */}
       <style>{`
-        * {
-          cursor: none !important;
+        @media (min-width: 768px) {
+          * {
+            cursor: none !important;
+          }
         }
       `}</style>
 
