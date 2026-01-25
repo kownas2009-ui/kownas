@@ -381,8 +381,23 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             });
           }
         } else {
+          // Registration successful - also explicitly resend confirmation to ensure email is sent
           const userEmail = email.trim().toLowerCase();
           setRegisteredEmail(userEmail);
+          
+          // Force resend confirmation email to make sure it's always sent
+          try {
+            await supabase.auth.resend({
+              type: 'signup',
+              email: userEmail,
+              options: {
+                emailRedirectTo: window.location.origin,
+              }
+            });
+          } catch (resendError) {
+            console.log('Resend attempted:', resendError);
+          }
+          
           toast({
             title: "Sprawdź swoją skrzynkę email! 📧",
             description: `Wysłaliśmy link weryfikacyjny na ${userEmail}. Sprawdź również folder SPAM.`,
@@ -776,7 +791,15 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                 )}
 
                 {view === "login" && (
-                  <div className="text-right">
+                  <div className="flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setView("resend-verification")}
+                      className="text-sm text-amber-600 dark:text-amber-400 hover:underline font-body"
+                      disabled={isLoading}
+                    >
+                      Nie masz weryfikacji?
+                    </button>
                     <button
                       type="button"
                       onClick={() => setView("forgot-password")}
