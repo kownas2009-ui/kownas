@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, differenceInHours } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
   LogOut, 
@@ -18,11 +18,25 @@ import {
   CheckCircle,
   Timer,
   FlaskConical,
-  Beaker
+  Beaker,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import BookingDialog from "@/components/BookingDialog";
 import StudentNotes from "@/components/StudentNotes";
 import ThemeToggle from "@/components/ThemeToggle";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Booking {
   id: string;
@@ -142,6 +156,28 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", bookingId);
+      
+      if (error) throw error;
+      
+      toast.success("Rezerwacja anulowana", {
+        description: "Lekcja została pomyślnie anulowana."
+      });
+      
+      fetchData();
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error("Błąd", {
+        description: "Nie udało się anulować rezerwacji. Spróbuj ponownie."
+      });
+    }
   };
 
   if (loading || !user) {
@@ -405,48 +441,106 @@ const Dashboard = () => {
                     </motion.div>
                   ) : (
                     <div className="space-y-4">
-                      {upcomingBookings.map((booking, index) => (
-                        <motion.div
-                          key={booking.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          whileHover={{ scale: 1.01, y: -2 }}
-                          className="p-5 rounded-2xl bg-card border border-border shadow-soft flex items-center justify-between group"
-                        >
-                          <div className="flex items-center gap-4">
-                            <motion.div 
-                              className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
-                              whileHover={{ rotate: 10 }}
-                            >
-                              <BookOpen className="w-7 h-7 text-primary" />
-                            </motion.div>
-                            <div>
-                              <h3 className="font-display font-semibold text-lg text-foreground">
-                                {booking.lesson_type}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                {format(new Date(booking.booking_date), "EEEE, d MMMM yyyy", { locale: pl })}
-                              </p>
-                              <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                {booking.booking_time}
-                              </p>
-                            </div>
-                          </div>
-                          <motion.span 
-                            className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                              booking.status === 'confirmed' 
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                            }`}
-                            whileHover={{ scale: 1.05 }}
+                      {upcomingBookings.map((booking, index) => {
+                        const bookingDateTime = new Date(`${booking.booking_date}T${booking.booking_time}`);
+                        const hoursUntil = differenceInHours(bookingDateTime, new Date());
+                        const canCancel = hoursUntil >= 24;
+                        
+                        return (
+                          <motion.div
+                            key={booking.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -100 }}
+                            transition={{ delay: index * 0.1 }}
+                            whileHover={{ scale: 1.01, y: -2 }}
+                            className="p-5 rounded-2xl bg-card border border-border shadow-soft group"
                           >
-                            {booking.status === 'confirmed' ? '✓ Potwierdzona' : '⏳ Oczekuje'}
-                          </motion.span>
-                        </motion.div>
-                      ))}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex items-center gap-4">
+                                <motion.div 
+                                  className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
+                                  whileHover={{ rotate: 10 }}
+                                >
+                                  <BookOpen className="w-7 h-7 text-primary" />
+                                </motion.div>
+                                <div>
+                                  <h3 className="font-display font-semibold text-lg text-foreground">
+                                    {booking.lesson_type}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
+                                    <Calendar className="w-4 h-4" />
+                                    {format(new Date(booking.booking_date), "EEEE, d MMMM yyyy", { locale: pl })}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground font-body flex items-center gap-2">
+                                    <Clock className="w-4 h-4" />
+                                    {booking.booking_time}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <motion.span 
+                                  className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                                    booking.status === 'confirmed' 
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                  }`}
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  {booking.status === 'confirmed' ? '✓ Potwierdzona' : '⏳ Oczekuje'}
+                                </motion.span>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                                        disabled={!canCancel}
+                                      >
+                                        <XCircle className="w-4 h-4 mr-1" />
+                                        Anuluj
+                                      </Button>
+                                    </motion.div>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle className="font-display flex items-center gap-2">
+                                        <AlertTriangle className="w-5 h-5 text-destructive" />
+                                        Anulować rezerwację?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription className="font-body">
+                                        Czy na pewno chcesz anulować lekcję na{" "}
+                                        <strong>{format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}</strong>{" "}
+                                        o godzinie <strong>{booking.booking_time}</strong>?
+                                        <br /><br />
+                                        Tej akcji nie można cofnąć.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Nie, zostaw</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleCancelBooking(booking.id)}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                      >
+                                        Tak, anuluj lekcję
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                
+                                {!canCancel && (
+                                  <span className="text-xs text-muted-foreground">
+                                    (za mniej niż 24h)
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   )}
                 </AnimatePresence>

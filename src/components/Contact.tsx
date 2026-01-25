@@ -83,10 +83,10 @@ const Contact = () => {
                   Email
                 </h3>
                 <a 
-                  href="mailto:a.kownacka@gmail.com"
+                  href="mailto:aneta.kownacka79@gmail.com"
                   className="text-muted-foreground font-body hover:text-primary transition-colors"
                 >
-                  a.kownacka@gmail.com
+                  aneta.kownacka79@gmail.com
                 </a>
               </div>
             </motion.div>
