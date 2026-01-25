@@ -235,16 +235,23 @@ const StudentMessaging = () => {
                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                       </div>
 
-                      {/* Admin reply */}
-                      {msg.admin_reply && (
-                        <div className="bg-muted/50 rounded-2xl p-4 mr-8">
-                          <div className="flex items-center gap-2 text-xs text-primary mb-2">
-                            <Reply className="w-3 h-3" />
-                            Odpowiedź od Anety • {msg.replied_at && format(new Date(msg.replied_at), "d MMM, HH:mm", { locale: pl })}
+                      {/* Admin replies - parse multiple replies */}
+                      {msg.admin_reply && msg.admin_reply.split('\n---\n').map((reply, index) => {
+                        // Parse timestamp from reply format: [timestamp] message
+                        const timestampMatch = reply.match(/^\[(.+?)\]\s/);
+                        const timestamp = timestampMatch ? timestampMatch[1] : null;
+                        const messageContent = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+                        
+                        return (
+                          <div key={index} className="bg-muted/50 rounded-2xl p-4 mr-8">
+                            <div className="flex items-center gap-2 text-xs text-primary mb-2">
+                              <Reply className="w-3 h-3" />
+                              Odpowiedź od Anety {timestamp && `• ${format(new Date(timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{messageContent}</p>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">{msg.admin_reply}</p>
-                        </div>
-                      )}
+                        );
+                      })}
                     </motion.div>
                   ))
                 )}
