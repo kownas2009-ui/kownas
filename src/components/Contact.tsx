@@ -206,7 +206,7 @@ const Contact = () => {
                   Dostępność
                 </h3>
                 <p className="text-muted-foreground font-body">
-                  Tylko weekendy (sobota i niedziela)
+                  Cały tydzień, godz. 8:00–20:00
                 </p>
               </div>
             </motion.div>

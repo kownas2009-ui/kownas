@@ -69,13 +69,13 @@ const Services = () => {
             whileHover={{ scale: 1.05 }}
           >
             <Sparkles className="w-4 h-4 text-secondary" />
-            <span className="text-sm font-medium text-secondary-foreground">Tylko weekendy</span>
+            <span className="text-sm font-medium text-secondary-foreground">Cały tydzień</span>
           </motion.div>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
             Oferta zajęć
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-body">
-            Zajęcia online, tylko w weekendy. Każda lekcja trwa 60 minut.
+            Zajęcia online przez cały tydzień. Każda lekcja trwa 60 minut.
           </p>
         </motion.div>
 

@@ -13,7 +13,7 @@ import {
   Clock
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, isSaturday, isSunday } from "date-fns";
+import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 import {
   Popover,
@@ -39,7 +39,7 @@ interface BlockedTimeSlot {
 }
 
 const TIME_SLOTS = [
-  "9:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"
+  "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
 ];
 
 const BlockedDaysManager = () => {
@@ -207,8 +207,7 @@ const BlockedDaysManager = () => {
     );
   };
 
-  // Only allow weekends
-  const isWeekend = (date: Date) => isSaturday(date) || isSunday(date);
+  // Allow all days
 
   // Check if date is already blocked as full day
   const isBlocked = (date: Date) => {
@@ -285,7 +284,7 @@ const BlockedDaysManager = () => {
                   setSelectedTimes([]);
                 }}
                 disabled={(date) =>
-                  date < new Date() || !isWeekend(date) || (blockType === "day" && isBlocked(date))
+                  date < new Date() || (blockType === "day" && isBlocked(date))
                 }
                 className="rounded-md border"
               />
