@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   MessageSquare,
   Send,
@@ -13,7 +12,8 @@ import {
   Reply,
   Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -29,6 +29,7 @@ interface ContactMessage {
   admin_reply: string | null;
   replied_at: string | null;
   created_at: string;
+  student_read_reply: boolean;
 }
 
 const StudentMessaging = () => {
@@ -40,6 +41,8 @@ const StudentMessaging = () => {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string; phone: string | null } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -64,7 +67,6 @@ const StudentMessaging = () => {
     
     setLoading(true);
     try {
-      // Fetch messages sent by this user's email
       const { data, error } = await supabase
         .from("contact_messages")
         .select("*")
@@ -91,7 +93,8 @@ const StudentMessaging = () => {
           sender_name: profile.full_name,
           sender_email: user.email!,
           sender_phone: profile.phone,
-          message: newMessage.trim()
+          message: newMessage.trim(),
+          student_read_reply: true
         });
 
       if (error) throw error;
@@ -108,7 +111,75 @@ const StudentMessaging = () => {
     }
   };
 
-  const unreadReplies = messages.filter(m => m.admin_reply && !m.is_read).length;
+  const handleReplyInThread = async (messageId: string, existingMessage: string) => {
+    if (!replyText.trim()) return;
+
+    setSending(true);
+    try {
+      const timestamp = new Date().toISOString();
+      const newReply = `[${timestamp}] ${replyText.trim()}`;
+      const updatedMessage = existingMessage 
+        ? `${existingMessage}\n---\n${newReply}`
+        : newReply;
+
+      const { error } = await supabase
+        .from("contact_messages")
+        .update({ 
+          message: updatedMessage,
+          student_read_reply: true
+        })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      toast.success("Odpowiedź wysłana!");
+      setReplyText("");
+      setReplyingTo(null);
+      fetchMessages();
+    } catch (error) {
+      console.error("Error sending reply:", error);
+      toast.error("Błąd podczas wysyłania odpowiedzi");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const markAsRead = async (messageId: string) => {
+    try {
+      await supabase
+        .from("contact_messages")
+        .update({ student_read_reply: true })
+        .eq("id", messageId);
+      
+      setMessages(prev => 
+        prev.map(m => m.id === messageId ? { ...m, student_read_reply: true } : m)
+      );
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+  };
+
+  const unreadReplies = messages.filter(m => m.admin_reply && !m.student_read_reply).length;
+
+  // Parse message parts (student messages and timestamps)
+  const parseMessageParts = (message: string) => {
+    return message.split('\n---\n').map((part, index) => {
+      const timestampMatch = part.match(/^\[(.+?)\]\s/);
+      const timestamp = timestampMatch ? timestampMatch[1] : null;
+      const content = timestampMatch ? part.replace(/^\[.+?\]\s/, '') : part;
+      return { content, timestamp, index };
+    });
+  };
+
+  // Parse admin reply parts
+  const parseAdminReplies = (adminReply: string) => {
+    return adminReply.split('\n---\n').map((reply, index) => {
+      const timestampMatch = reply.match(/^\[(.+?)\]\s/);
+      const timestamp = timestampMatch ? timestampMatch[1] : null;
+      const content = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+      return { content, timestamp, index };
+    });
+  };
 
   return (
     <motion.div
@@ -122,14 +193,17 @@ const StudentMessaging = () => {
         className="w-full p-5 flex items-center justify-between hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
             <MessageSquare className="w-5 h-5 text-white" />
+            {unreadReplies > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+            )}
           </div>
           <div className="text-left">
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
               Wiadomości do Anety
               {unreadReplies > 0 && (
-                <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                   {unreadReplies} nowe
                 </span>
               )}
@@ -159,7 +233,7 @@ const StudentMessaging = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+              <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
                 {/* New message form */}
                 {showNewForm ? (
                   <motion.div
@@ -219,41 +293,110 @@ const StudentMessaging = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-2"
-                    >
-                      {/* Student's message */}
-                      <div className="bg-primary/10 rounded-2xl p-4 ml-8">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                          <Clock className="w-3 h-3" />
-                          {format(new Date(msg.created_at), "d MMM yyyy, HH:mm", { locale: pl })}
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                      </div>
+                  messages.map((msg) => {
+                    const hasUnreadReply = msg.admin_reply && !msg.student_read_reply;
+                    
+                    return (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className={`relative rounded-2xl border ${hasUnreadReply ? 'border-red-500/50 bg-red-500/5' : 'border-border bg-muted/20'} p-4 space-y-3`}
+                        onClick={() => hasUnreadReply && markAsRead(msg.id)}
+                      >
+                        {/* Unread indicator */}
+                        {hasUnreadReply && (
+                          <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                        )}
 
-                      {/* Admin replies - parse multiple replies */}
-                      {msg.admin_reply && msg.admin_reply.split('\n---\n').map((reply, index) => {
-                        // Parse timestamp from reply format: [timestamp] message
-                        const timestampMatch = reply.match(/^\[(.+?)\]\s/);
-                        const timestamp = timestampMatch ? timestampMatch[1] : null;
-                        const messageContent = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
-                        
-                        return (
-                          <div key={index} className="bg-muted/50 rounded-2xl p-4 mr-8">
-                            <div className="flex items-center gap-2 text-xs text-primary mb-2">
-                              <Reply className="w-3 h-3" />
-                              Odpowiedź od Anety {timestamp && `• ${format(new Date(timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                        {/* Thread header */}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pb-2 border-b border-border/50">
+                          <Clock className="w-3 h-3" />
+                          Rozpoczęto: {format(new Date(msg.created_at), "d MMM yyyy, HH:mm", { locale: pl })}
+                        </div>
+
+                        {/* All messages in thread */}
+                        <div className="space-y-3">
+                          {/* Student messages */}
+                          {parseMessageParts(msg.message).map((part, idx) => (
+                            <div key={`student-${idx}`} className="bg-primary/10 rounded-xl p-3 ml-4">
+                              <div className="flex items-center gap-2 text-xs text-primary mb-1">
+                                <User className="w-3 h-3" />
+                                Ty {part.timestamp && `• ${format(new Date(part.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                              </div>
+                              <p className="text-sm whitespace-pre-wrap">{part.content}</p>
                             </div>
-                            <p className="text-sm whitespace-pre-wrap">{messageContent}</p>
-                          </div>
-                        );
-                      })}
-                    </motion.div>
-                  ))
+                          ))}
+
+                          {/* Admin replies */}
+                          {msg.admin_reply && parseAdminReplies(msg.admin_reply).map((reply, idx) => (
+                            <div key={`admin-${idx}`} className="bg-muted/50 rounded-xl p-3 mr-4">
+                              <div className="flex items-center gap-2 text-xs text-primary mb-1">
+                                <Reply className="w-3 h-3" />
+                                Aneta {reply.timestamp && `• ${format(new Date(reply.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                              </div>
+                              <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Reply form */}
+                        {msg.admin_reply && (
+                          <>
+                            {replyingTo === msg.id ? (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                className="space-y-2 pt-2 border-t border-border/50"
+                              >
+                                <Textarea
+                                  placeholder="Napisz odpowiedź..."
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  className="min-h-[80px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="hero"
+                                    size="sm"
+                                    onClick={() => handleReplyInThread(msg.id, msg.message)}
+                                    disabled={sending || !replyText.trim()}
+                                    className="flex-1"
+                                  >
+                                    {sending ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <Send className="w-4 h-4 mr-2" />
+                                        Odpowiedz
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                                  >
+                                    Anuluj
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={() => setReplyingTo(msg.id)}
+                              >
+                                <Reply className="w-4 h-4 mr-2" />
+                                Odpowiedz
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </motion.div>
+                    );
+                  })
                 )}
               </div>
             )}

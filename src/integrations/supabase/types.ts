@@ -117,6 +117,7 @@ export type Database = {
           sender_email: string
           sender_name: string
           sender_phone: string | null
+          student_read_reply: boolean
         }
         Insert: {
           admin_reply?: string | null
@@ -128,6 +129,7 @@ export type Database = {
           sender_email: string
           sender_name: string
           sender_phone?: string | null
+          student_read_reply?: boolean
         }
         Update: {
           admin_reply?: string | null
@@ -139,6 +141,7 @@ export type Database = {
           sender_email?: string
           sender_name?: string
           sender_phone?: string | null
+          student_read_reply?: boolean
         }
         Relationships: []
       }
