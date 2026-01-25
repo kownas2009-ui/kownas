@@ -26,7 +26,7 @@ const About = () => {
     {
       icon: Clock,
       title: "Elastyczne terminy",
-      description: "Zajęcia w weekendy, dostosowane do Twojego harmonogramu.",
+      description: "Zajęcia w całym tygodniu, dostosowane do Twojego harmonogramu.",
     },
     {
       icon: Laptop,

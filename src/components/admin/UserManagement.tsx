@@ -169,9 +169,13 @@ const UserManagement = () => {
 
   const handleUpdatePhone = async (userId: string) => {
     try {
+      // Normalize phone number - strip non-digits and add +48 prefix
+      const cleanedPhone = editPhoneValue.replace(/\D/g, '');
+      const formattedPhone = cleanedPhone ? `+48${cleanedPhone}` : null;
+      
       const { error } = await supabase
         .from("profiles")
-        .update({ phone: editPhoneValue.trim() || null })
+        .update({ phone: formattedPhone })
         .eq("user_id", userId);
 
       if (error) throw error;
@@ -249,24 +253,43 @@ const UserManagement = () => {
                 </span>
               )}
               {editingPhone === user.id ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editPhoneValue}
-                    onChange={(e) => setEditPhoneValue(e.target.value)}
-                    placeholder="+48..."
-                    className="h-7 w-32 text-xs"
-                  />
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleUpdatePhone(user.user_id)}>
+                <form 
+                  className="flex items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleUpdatePhone(user.user_id);
+                  }}
+                >
+                  <div className="flex items-center">
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded-l-md border border-r-0 border-input">+48</span>
+                    <Input
+                      value={editPhoneValue}
+                      onChange={(e) => {
+                        // Only allow digits and spaces
+                        const value = e.target.value.replace(/[^\d\s]/g, '');
+                        setEditPhoneValue(value);
+                      }}
+                      placeholder="XXX XXX XXX"
+                      className="h-7 w-28 text-xs rounded-l-none"
+                      autoFocus
+                    />
+                  </div>
+                  <Button type="submit" size="icon" variant="ghost" className="h-6 w-6">
                     <Save className="w-3 h-3 text-green-600" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPhone(null)}>
+                  <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingPhone(null)}>
                     <X className="w-3 h-3" />
                   </Button>
-                </div>
+                </form>
               ) : (
                 <span 
                   className="flex items-center gap-1 cursor-pointer hover:text-primary"
-                  onClick={() => { setEditingPhone(user.id); setEditPhoneValue(user.phone || ""); }}
+                  onClick={() => { 
+                    setEditingPhone(user.id); 
+                    // Strip +48 prefix for editing
+                    const phoneValue = user.phone?.replace(/^\+?48\s?/, '') || '';
+                    setEditPhoneValue(phoneValue); 
+                  }}
                 >
                   <Phone className="w-3 h-3" />
                   {user.phone || "Brak telefonu"}

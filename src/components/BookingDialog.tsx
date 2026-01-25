@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, isSaturday, isSunday } from "date-fns";
+import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 import { CalendarIcon, Clock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,7 @@ interface BookingDialogProps {
 }
 
 const timeSlots = [
-  "9:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"
+  "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
 ];
 
 const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDialogProps) => {
@@ -194,10 +194,9 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
     }
   };
 
-  // Only allow weekends that are not blocked
-  const isWeekend = (date: Date) => isSaturday(date) || isSunday(date);
+  // Allow all days, check if blocked
   const isBlocked = (date: Date) => blockedDays.includes(format(date, "yyyy-MM-dd"));
-  const isDateDisabled = (date: Date) => date < new Date() || !isWeekend(date) || isBlocked(date);
+  const isDateDisabled = (date: Date) => date < new Date() || isBlocked(date);
 
   return (
     <>
@@ -211,7 +210,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{lessonType}</DialogTitle>
           <DialogDescription className="font-body">
-            Wybierz termin w weekend (sobota lub niedziela).
+            Wybierz dogodny termin zajęć.
           </DialogDescription>
         </DialogHeader>
 
@@ -242,7 +241,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
             {/* Date Picker */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 font-body">
-                Wybierz datę (tylko weekendy)
+                Wybierz datę
               </label>
               <Popover>
                 <PopoverTrigger asChild>

@@ -147,7 +147,7 @@ const Footer = () => {
             </motion.span>
           </p>
           <p className="text-xs text-muted-foreground/60">
-            Tylko zajęcia online • Weekendy 9:00-18:00
+            Tylko zajęcia online • Cały tydzień 8:00–20:00
           </p>
         </motion.div>
       </div>

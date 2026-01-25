@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWeekend } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { pl } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Clock, User, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
     const isToday = isSameDay(date, new Date());
     const isSelected = selectedDate && isSameDay(date, selectedDate);
     const isCurrentMonth = isSameMonth(date, currentMonth);
-    const isWeekendDay = isWeekend(date);
 
     return (
       <motion.div
@@ -59,15 +58,13 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
           isCurrentMonth ? "bg-card" : "bg-muted/30",
           isSelected && "ring-2 ring-primary shadow-lg",
           isToday && "border-primary",
-          !isToday && "border-transparent",
-          isWeekendDay && isCurrentMonth && "bg-primary/5"
+          !isToday && "border-transparent"
         )}
       >
         <span className={cn(
           "text-sm font-medium",
           !isCurrentMonth && "text-muted-foreground/50",
-          isToday && "text-primary font-bold",
-          isWeekendDay && "text-secondary"
+          isToday && "text-primary font-bold"
         )}>
           {format(date, "d")}
         </span>
@@ -102,14 +99,6 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
           </div>
         )}
         
-        {/* Bubble animation for weekends */}
-        {isWeekendDay && isCurrentMonth && (
-          <motion.div
-            className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-secondary"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-        )}
       </motion.div>
     );
   };
