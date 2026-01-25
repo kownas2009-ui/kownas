@@ -134,8 +134,10 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   
   // hCaptcha state
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const captchaRef = useRef<HCaptcha>(null);
-  const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "";
+  // Use env variable or fallback to hCaptcha test key for development
+  const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "10000000-ffff-ffff-ffff-000000000001";
   
   const { signIn, signUp } = useAuth();
 
@@ -331,20 +333,24 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
       return;
     }
 
-    // For registration, check phone uniqueness and captcha FIRST before any rate limiting
+    // For registration, check phone uniqueness and captcha FIRST before anything else
     if (view === "register") {
       // Check phone uniqueness BEFORE anything else
+      setIsLoading(true);
       const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
+      setIsLoading(false);
+      
       if (!isPhoneUnique) {
         setErrors({ phone: "Ten numer telefonu jest już używany" });
         return;
       }
       
-      // Require captcha for registration
-      if (hCaptchaSiteKey && !captchaToken) {
+      // Require captcha for registration - ALWAYS required
+      if (!captchaToken) {
+        setCaptchaError("Potwierdź że nie jesteś robotem");
         toast({
-          title: "Potwierdź że nie jesteś robotem",
-          description: "Zaznacz pole CAPTCHA przed rejestracją",
+          title: "Wymagana weryfikacja CAPTCHA",
+          description: "Zaznacz pole 'Nie jestem robotem' przed rejestracją",
           variant: "destructive",
         });
         return;
@@ -418,22 +424,6 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           return;
         }
         
-        // Prevent rapid registration attempts (rate limit protection)
-        const now = Date.now();
-        const timeSinceLastAttempt = now - lastRegistrationAttempt;
-        if (timeSinceLastAttempt < REGISTRATION_COOLDOWN_MS && lastRegistrationAttempt > 0) {
-          const waitTime = Math.ceil((REGISTRATION_COOLDOWN_MS - timeSinceLastAttempt) / 1000);
-          toast({
-            title: "Poczekaj chwilę",
-            description: `Odczekaj ${waitTime} sekund przed ponowną próbą rejestracji`,
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-        
-        setLastRegistrationAttempt(now);
-        
         // Format phone with +48 prefix and sanitize all inputs
         const formattedPhone = phone.trim() ? `+48${phone.replace(/\D/g, '')}` : '';
         const { error } = await signUp(
@@ -448,13 +438,11 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
               error.message?.toLowerCase().includes("too many requests") ||
               error.message?.toLowerCase().includes("email rate limit")) {
             toast({
-              title: "Za dużo prób",
-              description: "System wykrył zbyt wiele prób rejestracji. Poczekaj 60 sekund i spróbuj ponownie.",
+              title: "Błąd serwera",
+              description: "Spróbuj ponownie za chwilę.",
               variant: "destructive",
               duration: 10000,
             });
-            // Set a longer cooldown after rate limit
-            setLastRegistrationAttempt(now + 57000); // Effective 60s cooldown
           } else if (error.message?.toLowerCase().includes("already registered") ||
                      error.message?.toLowerCase().includes("user already exists")) {
             toast({
@@ -519,8 +507,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setEmailWarning(null);
     setView("login");
     setCaptchaToken(null);
+    setCaptchaError(null);
     captchaRef.current?.resetCaptcha();
-    // Don't reset lastRegistrationAttempt to maintain cooldown across form resets
   };
 
   const isLockedOut = lockedUntil && Date.now() < lockedUntil;
@@ -877,23 +865,40 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                   </div>
                 )}
 
-                {/* hCaptcha for registration */}
-                {view === "register" && hCaptchaSiteKey && (
-                  <div className="flex flex-col items-center gap-2">
+                {/* hCaptcha for registration - ALWAYS shown */}
+                {view === "register" && (
+                  <div className="flex flex-col items-center gap-2 py-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Shield className="w-4 h-4" />
-                      <span>Potwierdź że nie jesteś robotem</span>
+                      <span>Weryfikacja bezpieczeństwa</span>
                     </div>
                     <HCaptcha
                       ref={captchaRef}
                       sitekey={hCaptchaSiteKey}
-                      onVerify={(token) => setCaptchaToken(token)}
+                      onVerify={(token) => {
+                        setCaptchaToken(token);
+                        setCaptchaError(null);
+                      }}
                       onExpire={() => setCaptchaToken(null)}
                       onError={() => setCaptchaToken(null)}
                     />
-                    {!captchaToken && (
+                    {captchaError && (
+                      <motion.p 
+                        className="text-sm text-destructive font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        {captchaError}
+                      </motion.p>
+                    )}
+                    {!captchaToken && !captchaError && (
                       <p className="text-xs text-muted-foreground">
                         Zaznacz powyższe pole aby kontynuować
+                      </p>
+                    )}
+                    {captchaToken && (
+                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                        ✓ Zweryfikowano
                       </p>
                     )}
                   </div>
