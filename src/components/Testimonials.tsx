@@ -100,6 +100,15 @@ const testimonials = [
     avatar: null,
     initials: "MK",
     color: "from-pink-400 to-rose-500"
+  },
+  {
+    name: "Krzysztof M.",
+    role: "Tata ucznia 8 klasy",
+    content: "Syn poprawił ocenę z 2 na 4 w dwa miesiące! Pani Aneta świetnie motywuje do nauki i tłumaczy rzeczy, które wydawały się niemożliwe do zrozumienia.",
+    rating: 5,
+    avatar: null,
+    initials: "KM",
+    color: "from-blue-500 to-indigo-600"
   }
 ];
 
