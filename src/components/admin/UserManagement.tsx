@@ -35,6 +35,7 @@ interface UserProfile {
   email?: string;
   created_at: string;
   lesson_count: number;
+  is_admin?: boolean;
 }
 
 const UserManagement = () => {
@@ -66,6 +67,16 @@ const UserManagement = () => {
 
       if (bookingsError) throw bookingsError;
 
+      // Fetch admin roles to exclude from deletion
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      if (rolesError) throw rolesError;
+
+      const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+
       // Count lessons per user
       const lessonCounts: Record<string, number> = {};
       bookings?.forEach(b => {
@@ -75,7 +86,8 @@ const UserManagement = () => {
       // Combine data
       const usersWithCounts = (profiles || []).map(p => ({
         ...p,
-        lesson_count: lessonCounts[p.user_id] || 0
+        lesson_count: lessonCounts[p.user_id] || 0,
+        is_admin: adminUserIds.has(p.user_id)
       }));
 
       setUsers(usersWithCounts);
@@ -222,46 +234,52 @@ const UserManagement = () => {
                       Dołączył: {new Date(user.created_at).toLocaleDateString("pl-PL")}
                     </span>
                     
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                          disabled={deletingId === user.id}
-                        >
-                          {deletingId === user.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="font-display flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-destructive" />
-                            Usunąć konto?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription className="font-body">
-                            Czy na pewno chcesz usunąć konto użytkownika{" "}
-                            <strong>{user.full_name}</strong>?
-                            <br /><br />
-                            Zostaną usunięte wszystkie dane: rezerwacje, notatki i profil.
-                            <strong className="text-destructive block mt-2">Tej akcji nie można cofnąć!</strong>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Anuluj</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteUser(user.user_id, user.id)}
-                            className="bg-destructive hover:bg-destructive/90"
+                    {user.is_admin ? (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
+                        Admin
+                      </span>
+                    ) : (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                            disabled={deletingId === user.id}
                           >
-                            Usuń konto
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            {deletingId === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="font-display flex items-center gap-2">
+                              <AlertTriangle className="w-5 h-5 text-destructive" />
+                              Usunąć konto?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="font-body">
+                              Czy na pewno chcesz usunąć konto użytkownika{" "}
+                              <strong>{user.full_name}</strong>?
+                              <br /><br />
+                              Zostaną usunięte wszystkie dane: rezerwacje, notatki i profil.
+                              <strong className="text-destructive block mt-2">Tej akcji nie można cofnąć!</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(user.user_id, user.id)}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              Usuń konto
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </motion.div>
