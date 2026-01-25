@@ -143,7 +143,7 @@ const MessagesTab = () => {
       const timestamp = new Date().toISOString();
       const adminMessage = `[${timestamp}] ${newMessageText.trim()}`;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("contact_messages")
         .insert({
           sender_name: student.full_name,
@@ -153,15 +153,22 @@ const MessagesTab = () => {
           is_read: true,
           admin_reply: adminMessage,
           replied_at: timestamp
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast.success("Wiadomość wysłana!");
+      
+      // Add new message to the list immediately
+      if (data) {
+        setMessages(prev => [data, ...prev]);
+      }
+      
       setShowNewMessage(false);
       setSelectedStudent("");
       setNewMessageText("");
-      fetchMessages();
     } catch (error) {
       console.error("Error sending new message:", error);
       toast.error("Błąd podczas wysyłania wiadomości");
