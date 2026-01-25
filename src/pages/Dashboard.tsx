@@ -516,7 +516,8 @@ const Dashboard = () => {
                                         <strong>{format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}</strong>{" "}
                                         o godzinie <strong>{booking.booking_time}</strong>?
                                         <br /><br />
-                                        Tej akcji nie można cofnąć.
+                                        <strong className="text-amber-600">Uwaga:</strong> W przypadku anulowania mniej niż 24h przed lekcją, 
+                                        obowiązuje opłata 50% wartości lekcji.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
