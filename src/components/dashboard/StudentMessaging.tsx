@@ -364,59 +364,55 @@ const StudentMessaging = () => {
                           ))}
                         </div>
 
-                        {/* Reply form */}
-                        {msg.admin_reply && (
-                          <>
-                            {replyingTo === msg.id ? (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                className="space-y-2 pt-2 border-t border-border/50"
-                              >
-                                <Textarea
-                                  placeholder="Napisz odpowiedź..."
-                                  value={replyText}
-                                  onChange={(e) => setReplyText(e.target.value)}
-                                  className="min-h-[80px]"
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="hero"
-                                    size="sm"
-                                    onClick={() => handleReplyInThread(msg.id, msg.message)}
-                                    disabled={sending || !replyText.trim()}
-                                    className="flex-1"
-                                  >
-                                    {sending ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <>
-                                        <Send className="w-4 h-4 mr-2" />
-                                        Odpowiedz
-                                      </>
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => { setReplyingTo(null); setReplyText(""); }}
-                                  >
-                                    Anuluj
-                                  </Button>
-                                </div>
-                              </motion.div>
-                            ) : (
+                        {/* Reply/Continue form - always available */}
+                        {replyingTo === msg.id ? (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            className="space-y-2 pt-2 border-t border-border/50"
+                          >
+                            <Textarea
+                              placeholder="Napisz wiadomość..."
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              className="min-h-[80px]"
+                            />
+                            <div className="flex gap-2">
                               <Button
-                                variant="ghost"
+                                variant="hero"
                                 size="sm"
-                                className="w-full mt-2"
-                                onClick={() => setReplyingTo(msg.id)}
+                                onClick={() => handleReplyInThread(msg.id, msg.message)}
+                                disabled={sending || !replyText.trim()}
+                                className="flex-1"
                               >
-                                <Reply className="w-4 h-4 mr-2" />
-                                Odpowiedz
+                                {sending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Send className="w-4 h-4 mr-2" />
+                                    Wyślij
+                                  </>
+                                )}
                               </Button>
-                            )}
-                          </>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                              >
+                                Anuluj
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => setReplyingTo(msg.id)}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Dodaj wiadomość
+                          </Button>
                         )}
                       </motion.div>
                     );
