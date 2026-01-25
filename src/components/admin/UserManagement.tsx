@@ -93,24 +93,32 @@ const UserManagement = () => {
         lessonCounts[b.user_id] = (lessonCounts[b.user_id] || 0) + 1;
       });
 
-      // Get auth users' verification status using edge function or check from session
-      // Since we can't access auth.users directly, we'll use a workaround
-      // We check if user has email_confirmed_at through profiles timestamps
-      // Users who verified their email will have updated_at different from created_at
-      // More reliable: check if user has any successful bookings (means they logged in = verified)
-      
-      // Combine data - admin accounts are always verified, others based on activity
+      // Fetch email verification status from edge function
+      let verificationStatus: Record<string, { email: string; is_verified: boolean }> = {};
+      try {
+        const { data: verificationData, error: verificationError } = await supabase.functions.invoke(
+          "get-users-verification-status"
+        );
+        
+        if (!verificationError && verificationData?.users) {
+          verificationStatus = verificationData.users;
+        }
+      } catch (e) {
+        console.error("Error fetching verification status:", e);
+      }
+
+      // Combine data
       const usersWithCounts = (profiles || []).map(p => {
         const isAdminAccount = adminUserIds.has(p.user_id);
-        const hasBookings = (lessonCounts[p.user_id] || 0) > 0;
-        const profileUpdated = new Date(p.updated_at).getTime() !== new Date(p.created_at).getTime();
+        const userVerification = verificationStatus[p.user_id];
         
         return {
           ...p,
+          email: userVerification?.email || "",
           lesson_count: lessonCounts[p.user_id] || 0,
           is_admin: isAdminAccount,
-          // Admin accounts are always verified, others need activity proof
-          is_verified: isAdminAccount || hasBookings || profileUpdated
+          // Use actual email verification status
+          is_verified: isAdminAccount || (userVerification?.is_verified ?? false)
         };
       });
 
