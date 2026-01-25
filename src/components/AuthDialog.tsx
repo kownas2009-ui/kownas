@@ -68,8 +68,39 @@ const passwordSchema = z.string()
   .regex(/[a-z]/, "Hasło musi zawierać małą literę")
   .regex(/[0-9]/, "Hasło musi zawierać cyfrę");
 
-const fullNameSchema = z.string().trim().min(2, "Imię i nazwisko wymagane").max(100, "Max 100 znaków");
-const phoneSchema = z.string().trim().min(9, "Numer telefonu musi mieć min. 9 cyfr").max(15, "Max 15 znaków").regex(/^[\d\s]+$/, "Wpisz tylko cyfry");
+// Enhanced input sanitization for XSS prevention
+const sanitizeInput = (input: string): string => {
+  return input
+    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .trim();
+};
+
+// Validate input doesn't contain SQL injection patterns
+const containsSqlInjection = (input: string): boolean => {
+  const sqlPatterns = [
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|EXEC|UNION|SCRIPT)\b)/i,
+    /(--|\/\*|\*\/|;|\bOR\b\s+\d+=\d+|\bAND\b\s+\d+=\d+)/i,
+    /(\bOR\b\s+['"]?\w+['"]?\s*=\s*['"]?\w+['"]?)/i,
+    /'(\s|\S)*--/i,
+  ];
+  return sqlPatterns.some(pattern => pattern.test(input));
+};
+
+const fullNameSchema = z.string()
+  .trim()
+  .min(2, "Imię i nazwisko wymagane")
+  .max(100, "Max 100 znaków")
+  .regex(/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s\-']+$/, "Dozwolone tylko litery, spacje i myślniki")
+  .refine((val) => !containsSqlInjection(val), { message: "Nieprawidłowe znaki w imieniu" });
+
+const phoneSchema = z.string()
+  .trim()
+  .min(9, "Numer telefonu musi mieć min. 9 cyfr")
+  .max(15, "Max 15 znaków")
+  .regex(/^[\d\s]+$/, "Wpisz tylko cyfry");
 
 // Rate limiting configuration
 const MAX_ATTEMPTS = 5;
@@ -348,6 +379,26 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
+        // FIRST: Check phone uniqueness BEFORE rate limiting
+        const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
+        if (!isPhoneUnique) {
+          setErrors({ phone: "Ten numer telefonu jest już używany" });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Security: Check for SQL injection attempts in all inputs
+        const sanitizedFullName = sanitizeInput(fullName);
+        if (containsSqlInjection(email) || containsSqlInjection(fullName) || containsSqlInjection(phone)) {
+          toast({
+            title: "Wykryto niedozwolone znaki",
+            description: "Usuń specjalne znaki z formularza",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         // Prevent rapid registration attempts (rate limit protection)
         const now = Date.now();
         const timeSinceLastAttempt = now - lastRegistrationAttempt;
@@ -362,24 +413,16 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           return;
         }
         
-        // Check phone uniqueness before registration
-        const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
-        if (!isPhoneUnique) {
-          toast({
-            title: "Numer telefonu już zarejestrowany",
-            description: "Ten numer telefonu jest już przypisany do innego konta. Użyj innego numeru.",
-            variant: "destructive",
-          });
-          setErrors({ phone: "Ten numer telefonu jest już używany" });
-          setIsLoading(false);
-          return;
-        }
-        
         setLastRegistrationAttempt(now);
         
-        // Format phone with +48 prefix
-        const formattedPhone = phone.trim() ? `+48${phone.replace(/\s/g, '')}` : '';
-        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), formattedPhone);
+        // Format phone with +48 prefix and sanitize all inputs
+        const formattedPhone = phone.trim() ? `+48${phone.replace(/\D/g, '')}` : '';
+        const { error } = await signUp(
+          sanitizeInput(email.trim().toLowerCase()), 
+          password, 
+          sanitizedFullName, 
+          formattedPhone
+        );
         if (error) {
           // Handle rate limit error specifically
           if (error.message?.toLowerCase().includes("rate limit") || 
