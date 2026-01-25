@@ -17,7 +17,8 @@ import {
   Mail,
   Pencil,
   Save,
-  X
+  X,
+  FileText
 } from "lucide-react";
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import SendNoteDialog from "./SendNoteDialog";
 
 interface UserProfile {
   id: string;
@@ -321,6 +323,22 @@ const UserManagement = () => {
           <span className="text-xs text-muted-foreground">
             Dołączył: {new Date(user.created_at).toLocaleDateString("pl-PL")}
           </span>
+          
+          {!user.is_admin && (
+            <SendNoteDialog
+              studentUserId={user.user_id}
+              studentName={user.full_name || "Uczeń"}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">Notatka</span>
+              </Button>
+            </SendNoteDialog>
+          )}
           
           {user.is_admin ? (
             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
