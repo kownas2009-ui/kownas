@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_days: {
+        Row: {
+          blocked_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           booking_date: string
@@ -54,6 +78,42 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      contact_messages: {
+        Row: {
+          admin_reply: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          replied_at: string | null
+          sender_email: string
+          sender_name: string
+          sender_phone: string | null
+        }
+        Insert: {
+          admin_reply?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          replied_at?: string | null
+          sender_email: string
+          sender_name: string
+          sender_phone?: string | null
+        }
+        Update: {
+          admin_reply?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          replied_at?: string | null
+          sender_email?: string
+          sender_name?: string
+          sender_phone?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
