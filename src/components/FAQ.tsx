@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     question: "Czy można odwołać lekcję?",
-    answer: "Tak, lekcję można odwołać bezpłatnie do 24 godzin przed planowanym terminem. W przypadku późniejszego odwołania, lekcja jest płatna."
+    answer: "Tak, lekcję można odwołać bezpłatnie do 24 godzin przed planowanym terminem. W przypadku późniejszego odwołania pobierana jest opłata 50% wartości lekcji."
   },
   {
     question: "Jak często powinny odbywać się zajęcia?",
@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "Jak wygląda płatność?",
-    answer: "Płatność odbywa się przelewem po każdej lekcji lub z góry za pakiet zajęć. Numer konta podaję po pierwszej lekcji."
+    answer: "Płatność odbywa się przez BLIK na 15 minut przed rozpoczęciem lekcji. Szczegóły płatności otrzymasz po potwierdzeniu rezerwacji."
   }
 ];
 

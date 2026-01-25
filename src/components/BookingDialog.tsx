@@ -105,8 +105,8 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
 
     try {
       if (user) {
-        // Save to database - using type assertion for newly created tables
-        const { error } = await (supabase as any).from("bookings").insert({
+        // Save to database
+        const { error } = await supabase.from("bookings").insert({
           user_id: user.id,
           lesson_type: lessonType,
           booking_date: format(date, "yyyy-MM-dd"),

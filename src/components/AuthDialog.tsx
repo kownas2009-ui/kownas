@@ -250,8 +250,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           });
         } else {
           toast({
-            title: "Konto utworzone! ✓",
-            description: "Możesz się teraz zalogować",
+            title: "Sprawdź swoją skrzynkę email! 📧",
+            description: "Wysłaliśmy link weryfikacyjny na podany adres email. Kliknij w link, aby aktywować konto.",
+            duration: 10000,
           });
           setIsOpen(false);
           resetForm();
