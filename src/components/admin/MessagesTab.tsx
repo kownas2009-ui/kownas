@@ -87,7 +87,7 @@ const MessagesTab = () => {
 
   const handleSelectMessage = (message: ContactMessage) => {
     setSelectedMessage(message);
-    setReplyText(message.admin_reply || "");
+    setReplyText(""); // Always start with empty input for new reply
     if (!message.is_read) {
       markAsRead(message.id);
     }
@@ -98,23 +98,34 @@ const MessagesTab = () => {
 
     setReplying(true);
     try {
+      // Append new reply to existing replies (chat format)
+      const timestamp = new Date().toISOString();
+      const newReplyEntry = `[${timestamp}] ${replyText.trim()}`;
+      
+      // If there are existing replies, append with separator
+      const existingReplies = selectedMessage.admin_reply || "";
+      const updatedReply = existingReplies 
+        ? `${existingReplies}\n---\n${newReplyEntry}`
+        : newReplyEntry;
+
       const { error } = await supabase
         .from("contact_messages")
         .update({ 
-          admin_reply: replyText.trim(),
-          replied_at: new Date().toISOString()
+          admin_reply: updatedReply,
+          replied_at: timestamp
         })
         .eq("id", selectedMessage.id);
 
       if (error) throw error;
 
-      toast.success("Odpowiedź zapisana!");
+      toast.success("Odpowiedź wysłana!");
       setMessages(prev => prev.map(m => 
         m.id === selectedMessage.id 
-          ? { ...m, admin_reply: replyText.trim(), replied_at: new Date().toISOString() }
+          ? { ...m, admin_reply: updatedReply, replied_at: timestamp }
           : m
       ));
-      setSelectedMessage(prev => prev ? { ...prev, admin_reply: replyText.trim(), replied_at: new Date().toISOString() } : null);
+      setSelectedMessage(prev => prev ? { ...prev, admin_reply: updatedReply, replied_at: timestamp } : null);
+      setReplyText(""); // Clear input after sending
     } catch (error) {
       console.error("Error sending reply:", error);
       toast.error("Błąd podczas wysyłania odpowiedzi");
@@ -282,16 +293,23 @@ const MessagesTab = () => {
                 <p className="whitespace-pre-wrap">{selectedMessage.message}</p>
               </div>
 
-              {/* Admin reply if exists */}
-              {selectedMessage.admin_reply && (
-                <div className="bg-primary/10 rounded-2xl p-4 ml-8">
-                  <p className="text-xs text-primary mb-2 flex items-center gap-1">
-                    <Reply className="w-3 h-3" />
-                    Twoja odpowiedź • {selectedMessage.replied_at && format(new Date(selectedMessage.replied_at), "d MMM, HH:mm", { locale: pl })}
-                  </p>
-                  <p className="whitespace-pre-wrap">{selectedMessage.admin_reply}</p>
-                </div>
-              )}
+              {/* Admin replies - parse multiple replies */}
+              {selectedMessage.admin_reply && selectedMessage.admin_reply.split('\n---\n').map((reply, index) => {
+                // Parse timestamp from reply format: [timestamp] message
+                const timestampMatch = reply.match(/^\[(.+?)\]\s/);
+                const timestamp = timestampMatch ? timestampMatch[1] : null;
+                const messageContent = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+                
+                return (
+                  <div key={index} className="bg-primary/10 rounded-2xl p-4 ml-8">
+                    <p className="text-xs text-primary mb-2 flex items-center gap-1">
+                      <Reply className="w-3 h-3" />
+                      Twoja odpowiedź {timestamp && `• ${format(new Date(timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                    </p>
+                    <p className="whitespace-pre-wrap">{messageContent}</p>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Reply input */}
@@ -314,7 +332,7 @@ const MessagesTab = () => {
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      {selectedMessage.admin_reply ? "Zaktualizuj odpowiedź" : "Zapisz odpowiedź"}
+                      Wyślij odpowiedź
                     </>
                   )}
                 </Button>

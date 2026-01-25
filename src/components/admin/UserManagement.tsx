@@ -169,8 +169,15 @@ const UserManagement = () => {
 
   const handleUpdatePhone = async (userId: string) => {
     try {
-      // Normalize phone number - strip non-digits and add +48 prefix
-      const cleanedPhone = editPhoneValue.replace(/\D/g, '');
+      // Normalize phone number - strip non-digits
+      let cleanedPhone = editPhoneValue.replace(/\D/g, '');
+      
+      // Remove leading 48 if present (user might paste full number)
+      if (cleanedPhone.startsWith('48') && cleanedPhone.length > 9) {
+        cleanedPhone = cleanedPhone.substring(2);
+      }
+      
+      // Format with +48 prefix
       const formattedPhone = cleanedPhone ? `+48${cleanedPhone}` : null;
       
       const { error } = await supabase
@@ -179,9 +186,15 @@ const UserManagement = () => {
         .eq("user_id", userId);
 
       if (error) throw error;
+      
+      // Update local state immediately
+      setUsers(prev => prev.map(u => 
+        u.user_id === userId ? { ...u, phone: formattedPhone } : u
+      ));
+      
       toast.success("Numer telefonu zaktualizowany");
       setEditingPhone(null);
-      fetchUsers();
+      setEditPhoneValue("");
     } catch (error) {
       console.error("Error updating phone:", error);
       toast.error("Błąd podczas aktualizacji telefonu");
