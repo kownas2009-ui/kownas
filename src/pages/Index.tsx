@@ -9,12 +9,19 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import CustomCursor from "@/components/CustomCursor";
 import InteractivePeriodicTable from "@/components/InteractivePeriodicTable";
+import ChemistryQuiz from "@/components/ChemistryQuiz";
+import SuccessCounter from "@/components/SuccessCounter";
+import ChemistryFacts from "@/components/ChemistryFacts";
+import PageLoader from "@/components/PageLoader";
 import { FloatingAtom, BubblingBeaker, DNAHelix, TestTube, BenzeneRing, FloatingFormula } from "@/components/ChemistryAnimations";
 import { motion } from "framer-motion";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Page loading animation */}
+      <PageLoader />
+      
       {/* Custom neon cursor */}
       <CustomCursor />
       
@@ -110,15 +117,18 @@ const Index = () => {
         <section id="about">
           <About />
         </section>
+        <SuccessCounter />
         <section id="how-it-works">
           <HowItWorks />
         </section>
         <section id="services">
           <Services />
         </section>
+        <ChemistryFacts />
         <section id="testimonials">
           <Testimonials />
         </section>
+        <ChemistryQuiz />
         <section id="faq">
           <FAQ />
         </section>

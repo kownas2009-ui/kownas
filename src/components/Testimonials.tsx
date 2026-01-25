@@ -34,7 +34,7 @@ const testimonials = [
     role: "Uczeń technikum",
     content: "Profesjonalne podejście i świetne materiały. Zajęcia online są bardzo wygodne i efektywne.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face",
     initials: null,
     color: null
   },
@@ -80,6 +80,33 @@ const testimonials = [
     content: "Pani Aneta tłumaczy tak, że naprawdę rozumiem! Super zajęcia.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
+  },
+  {
+    name: "Dawid R.",
+    role: "Uczeń 1 liceum",
+    content: "Wreszcie rozumiem wzory chemiczne! Nauka z panią Anetą to czysta przyjemność.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face",
+    initials: null,
+    color: null
+  },
+  {
+    name: "Magda K.",
+    role: "Mama licealistki",
+    content: "Córka przeszła od strachu przed chemią do fascynacji przedmiotem. Polecam z całego serca!",
+    rating: 5,
+    avatar: null,
+    initials: "MK",
+    color: "from-emerald-400 to-teal-500"
+  },
+  {
+    name: "Filip W.",
+    role: "Student medycyny",
+    content: "Dzięki solidnym podstawom od pani Anety chemia na studiach to dla mnie pestka!",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
     initials: null,
     color: null
   }
