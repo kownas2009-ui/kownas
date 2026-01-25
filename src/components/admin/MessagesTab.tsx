@@ -473,26 +473,38 @@ const MessagesTab = () => {
             </div>
 
             <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-              {/* Original message */}
-              <div className="bg-muted/30 rounded-2xl p-4">
-                <p className="text-xs text-muted-foreground mb-2">
-                  {format(new Date(selectedMessage.created_at), "d MMMM yyyy, HH:mm", { locale: pl })}
-                </p>
-                <p className="whitespace-pre-wrap">{selectedMessage.message}</p>
-              </div>
+              {/* Student messages - parse multiple messages */}
+              {selectedMessage.message && selectedMessage.message.trim() && selectedMessage.message.split('\n---\n').map((msg, index) => {
+                if (!msg.trim()) return null;
+                // Parse timestamp from message format: [timestamp] message
+                const timestampMatch = msg.match(/^\[(.+?)\]\s/);
+                const messageContent = timestampMatch ? msg.replace(/^\[.+?\]\s/, '') : msg;
+                if (!messageContent.trim()) return null;
+                
+                return (
+                  <div key={`student-${index}`} className="bg-muted/30 rounded-2xl p-4">
+                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {selectedMessage.sender_name}
+                    </p>
+                    <p className="whitespace-pre-wrap">{messageContent}</p>
+                  </div>
+                );
+              })}
 
               {/* Admin replies - parse multiple replies */}
               {selectedMessage.admin_reply && selectedMessage.admin_reply.split('\n---\n').map((reply, index) => {
+                if (!reply.trim()) return null;
                 // Parse timestamp from reply format: [timestamp] message
                 const timestampMatch = reply.match(/^\[(.+?)\]\s/);
-                const timestamp = timestampMatch ? timestampMatch[1] : null;
                 const messageContent = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+                if (!messageContent.trim()) return null;
                 
                 return (
-                  <div key={index} className="bg-primary/10 rounded-2xl p-4 ml-8">
+                  <div key={`admin-${index}`} className="bg-primary/10 rounded-2xl p-4 ml-8">
                     <p className="text-xs text-primary mb-2 flex items-center gap-1">
                       <Reply className="w-3 h-3" />
-                      Twoja odpowiedź {timestamp && `• ${format(new Date(timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                      Twoja odpowiedź
                     </p>
                     <p className="whitespace-pre-wrap">{messageContent}</p>
                   </div>
