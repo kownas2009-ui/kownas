@@ -161,23 +161,41 @@ const StudentMessaging = () => {
 
   const unreadReplies = messages.filter(m => m.admin_reply && !m.student_read_reply).length;
 
-  // Parse message parts (student messages and timestamps)
-  const parseMessageParts = (message: string) => {
-    return message.split('\n---\n').map((part, index) => {
+  // Parse all messages chronologically
+  const parseAllMessagesChronologically = (msg: ContactMessage) => {
+    const allMessages: { content: string; timestamp: string | null; sender: 'student' | 'admin' }[] = [];
+    
+    // Parse student messages
+    msg.message.split('\n---\n').forEach((part) => {
       const timestampMatch = part.match(/^\[(.+?)\]\s/);
       const timestamp = timestampMatch ? timestampMatch[1] : null;
       const content = timestampMatch ? part.replace(/^\[.+?\]\s/, '') : part;
-      return { content, timestamp, index };
+      allMessages.push({ 
+        content, 
+        timestamp: timestamp || msg.created_at, 
+        sender: 'student' 
+      });
     });
-  };
-
-  // Parse admin reply parts
-  const parseAdminReplies = (adminReply: string) => {
-    return adminReply.split('\n---\n').map((reply, index) => {
-      const timestampMatch = reply.match(/^\[(.+?)\]\s/);
-      const timestamp = timestampMatch ? timestampMatch[1] : null;
-      const content = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
-      return { content, timestamp, index };
+    
+    // Parse admin replies
+    if (msg.admin_reply) {
+      msg.admin_reply.split('\n---\n').forEach((reply) => {
+        const timestampMatch = reply.match(/^\[(.+?)\]\s/);
+        const timestamp = timestampMatch ? timestampMatch[1] : null;
+        const content = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
+        allMessages.push({ 
+          content, 
+          timestamp: timestamp || msg.replied_at, 
+          sender: 'admin' 
+        });
+      });
+    }
+    
+    // Sort by timestamp (oldest first)
+    return allMessages.sort((a, b) => {
+      const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return dateA - dateB;
     });
   };
 
@@ -315,28 +333,26 @@ const StudentMessaging = () => {
                           Rozpoczęto: {format(new Date(msg.created_at), "d MMM yyyy, HH:mm", { locale: pl })}
                         </div>
 
-                        {/* All messages in thread */}
+                        {/* All messages in thread - chronologically sorted */}
                         <div className="space-y-3">
-                          {/* Student messages */}
-                          {parseMessageParts(msg.message).map((part, idx) => (
-                            <div key={`student-${idx}`} className="bg-primary/10 rounded-xl p-3 ml-4">
-                              <div className="flex items-center gap-2 text-xs text-primary mb-1">
-                                <User className="w-3 h-3" />
-                                Ty {part.timestamp && `• ${format(new Date(part.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                          {parseAllMessagesChronologically(msg).map((item, idx) => (
+                            item.sender === 'student' ? (
+                              <div key={`msg-${idx}`} className="bg-primary/10 rounded-xl p-3 ml-4">
+                                <div className="flex items-center gap-2 text-xs text-primary mb-1">
+                                  <User className="w-3 h-3" />
+                                  Ty {item.timestamp && `• ${format(new Date(item.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                                </div>
+                                <p className="text-sm whitespace-pre-wrap">{item.content}</p>
                               </div>
-                              <p className="text-sm whitespace-pre-wrap">{part.content}</p>
-                            </div>
-                          ))}
-
-                          {/* Admin replies */}
-                          {msg.admin_reply && parseAdminReplies(msg.admin_reply).map((reply, idx) => (
-                            <div key={`admin-${idx}`} className="bg-muted/50 rounded-xl p-3 mr-4">
-                              <div className="flex items-center gap-2 text-xs text-primary mb-1">
-                                <Reply className="w-3 h-3" />
-                                Aneta {reply.timestamp && `• ${format(new Date(reply.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                            ) : (
+                              <div key={`msg-${idx}`} className="bg-muted/50 rounded-xl p-3 mr-4">
+                                <div className="flex items-center gap-2 text-xs text-primary mb-1">
+                                  <Reply className="w-3 h-3" />
+                                  Aneta {item.timestamp && `• ${format(new Date(item.timestamp), "d MMM, HH:mm", { locale: pl })}`}
+                                </div>
+                                <p className="text-sm whitespace-pre-wrap">{item.content}</p>
                               </div>
-                              <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
-                            </div>
+                            )
                           ))}
                         </div>
 
