@@ -692,7 +692,14 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                         autoComplete="tel"
                       />
                       {errors.phone && (
-                        <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                        <motion.div 
+                          className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                          <p className="text-sm text-destructive font-medium">{errors.phone}</p>
+                        </motion.div>
                       )}
                     </div>
                   </motion.div>
