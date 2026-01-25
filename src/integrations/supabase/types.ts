@@ -20,6 +20,7 @@ export type Database = {
           booking_time: string
           created_at: string
           id: string
+          is_paid: boolean
           lesson_type: string
           status: string
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           booking_time: string
           created_at?: string
           id?: string
+          is_paid?: boolean
           lesson_type: string
           status?: string
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           booking_time?: string
           created_at?: string
           id?: string
+          is_paid?: boolean
           lesson_type?: string
           status?: string
           user_id?: string

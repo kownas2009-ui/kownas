@@ -14,6 +14,7 @@ interface Booking {
   status: string;
   created_at: string;
   user_id: string;
+  is_paid: boolean;
   profiles?: {
     full_name: string;
     phone: string | null;

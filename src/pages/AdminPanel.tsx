@@ -29,7 +29,9 @@ import {
   CalendarDays,
   ListChecks,
   FileText,
-  Send
+  Send,
+  CreditCard,
+  Banknote
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminCalendar from "@/components/admin/AdminCalendar";
@@ -47,6 +49,7 @@ interface Booking {
   status: string;
   created_at: string;
   user_id: string;
+  is_paid: boolean;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -433,6 +436,28 @@ const AdminPanel = () => {
     }
   };
 
+  const updatePaymentStatus = async (id: string, isPaid: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ is_paid: isPaid })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success(isPaid ? "Oznaczono jako opłacone!" : "Cofnięto potwierdzenie opłaty");
+      fetchData();
+      
+      // Update selected booking details if open
+      if (selectedBookingDetails?.id === id) {
+        setSelectedBookingDetails(prev => prev ? { ...prev, is_paid: isPaid } : null);
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Błąd podczas aktualizacji płatności");
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
@@ -715,6 +740,52 @@ const AdminPanel = () => {
                     </div>
                   </div>
 
+                  {/* Payment status */}
+                  <div className={`p-4 rounded-xl flex items-center justify-between ${
+                    selectedBookingDetails.is_paid 
+                      ? "bg-green-500/10 border border-green-500/30" 
+                      : "bg-amber-500/10 border border-amber-500/30"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        selectedBookingDetails.is_paid ? "bg-green-500/20" : "bg-amber-500/20"
+                      }`}>
+                        <Banknote className={`w-5 h-5 ${
+                          selectedBookingDetails.is_paid ? "text-green-600" : "text-amber-600"
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold">
+                          {selectedBookingDetails.is_paid ? "Opłacone" : "Nieopłacone"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Status płatności za lekcję
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant={selectedBookingDetails.is_paid ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => updatePaymentStatus(selectedBookingDetails.id, !selectedBookingDetails.is_paid)}
+                      className={selectedBookingDetails.is_paid 
+                        ? "text-amber-600 border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                        : "bg-green-600 hover:bg-green-700"
+                      }
+                    >
+                      {selectedBookingDetails.is_paid ? (
+                        <>
+                          <X className="w-4 h-4 mr-1" />
+                          Cofnij
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Potwierdź opłatę
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
                   {/* Action buttons */}
                   <div className="flex flex-wrap gap-3 pt-4">
                     {selectedBookingDetails.status === "pending" && (
@@ -866,6 +937,23 @@ const AdminPanel = () => {
                         </div>
 
                         <div className="flex items-center gap-6">
+                          {/* Payment indicator */}
+                          <motion.div 
+                            whileHover={{ scale: 1.1 }}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                              booking.is_paid 
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updatePaymentStatus(booking.id, !booking.is_paid);
+                            }}
+                          >
+                            <Banknote className="w-3 h-3" />
+                            {booking.is_paid ? "Opłacone" : "Nieopłacone"}
+                          </motion.div>
+                          
                           <div className="text-right">
                             <p className="font-semibold text-foreground">
                               {format(new Date(booking.booking_date), "d MMMM yyyy", { locale: pl })}
