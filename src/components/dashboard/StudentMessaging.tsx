@@ -165,29 +165,37 @@ const StudentMessaging = () => {
   const parseAllMessagesChronologically = (msg: ContactMessage) => {
     const allMessages: { content: string; timestamp: string | null; sender: 'student' | 'admin' }[] = [];
     
-    // Parse student messages
-    msg.message.split('\n---\n').forEach((part) => {
-      const timestampMatch = part.match(/^\[(.+?)\]\s/);
-      const timestamp = timestampMatch ? timestampMatch[1] : null;
-      const content = timestampMatch ? part.replace(/^\[.+?\]\s/, '') : part;
-      allMessages.push({ 
-        content, 
-        timestamp: timestamp || msg.created_at, 
-        sender: 'student' 
+    // Parse student messages (skip empty messages)
+    if (msg.message && msg.message.trim()) {
+      msg.message.split('\n---\n').forEach((part) => {
+        if (!part.trim()) return;
+        const timestampMatch = part.match(/^\[(.+?)\]\s/);
+        const timestamp = timestampMatch ? timestampMatch[1] : null;
+        const content = timestampMatch ? part.replace(/^\[.+?\]\s/, '') : part;
+        if (content.trim()) {
+          allMessages.push({ 
+            content, 
+            timestamp: timestamp || msg.created_at, 
+            sender: 'student' 
+          });
+        }
       });
-    });
+    }
     
     // Parse admin replies
     if (msg.admin_reply) {
       msg.admin_reply.split('\n---\n').forEach((reply) => {
+        if (!reply.trim()) return;
         const timestampMatch = reply.match(/^\[(.+?)\]\s/);
         const timestamp = timestampMatch ? timestampMatch[1] : null;
         const content = timestampMatch ? reply.replace(/^\[.+?\]\s/, '') : reply;
-        allMessages.push({ 
-          content, 
-          timestamp: timestamp || msg.replied_at, 
-          sender: 'admin' 
-        });
+        if (content.trim()) {
+          allMessages.push({ 
+            content, 
+            timestamp: timestamp || msg.replied_at, 
+            sender: 'admin' 
+          });
+        }
       });
     }
     

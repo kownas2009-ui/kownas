@@ -149,10 +149,11 @@ const MessagesTab = () => {
           sender_name: student.full_name,
           sender_email: student.email,
           sender_phone: student.phone,
-          message: "📩 Wiadomość od Anety",
+          message: "",
           is_read: true,
           admin_reply: adminMessage,
-          replied_at: timestamp
+          replied_at: timestamp,
+          student_read_reply: false
         })
         .select()
         .single();
