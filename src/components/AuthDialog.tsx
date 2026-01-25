@@ -75,6 +75,9 @@ const phoneSchema = z.string().trim().min(9, "Numer telefonu wymagany").max(20, 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 60000; // 1 minute
 
+// Debounce registration to prevent rate limits
+const REGISTRATION_COOLDOWN_MS = 3000; // 3 seconds between registration attempts
+
 type AuthView = "login" | "register" | "forgot-password" | "reset-sent";
 
 const AuthDialog = ({ children }: AuthDialogProps) => {
@@ -92,6 +95,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
+  const [lastRegistrationAttempt, setLastRegistrationAttempt] = useState<number>(0);
   
   const { signIn, signUp } = useAuth();
 
@@ -246,13 +250,50 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
-        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), phone.trim());
-        if (error) {
+        // Prevent rapid registration attempts (rate limit protection)
+        const now = Date.now();
+        const timeSinceLastAttempt = now - lastRegistrationAttempt;
+        if (timeSinceLastAttempt < REGISTRATION_COOLDOWN_MS && lastRegistrationAttempt > 0) {
+          const waitTime = Math.ceil((REGISTRATION_COOLDOWN_MS - timeSinceLastAttempt) / 1000);
           toast({
-            title: "Błąd rejestracji",
-            description: error.message || "Nie udało się utworzyć konta",
+            title: "Poczekaj chwilę",
+            description: `Odczekaj ${waitTime} sekund przed ponowną próbą rejestracji`,
             variant: "destructive",
           });
+          setIsLoading(false);
+          return;
+        }
+        
+        setLastRegistrationAttempt(now);
+        
+        const { error } = await signUp(email.trim().toLowerCase(), password, fullName.trim(), phone.trim());
+        if (error) {
+          // Handle rate limit error specifically
+          if (error.message?.toLowerCase().includes("rate limit") || 
+              error.message?.toLowerCase().includes("too many requests") ||
+              error.message?.toLowerCase().includes("email rate limit")) {
+            toast({
+              title: "Za dużo prób",
+              description: "System wykrył zbyt wiele prób rejestracji. Poczekaj 60 sekund i spróbuj ponownie.",
+              variant: "destructive",
+              duration: 10000,
+            });
+            // Set a longer cooldown after rate limit
+            setLastRegistrationAttempt(now + 57000); // Effective 60s cooldown
+          } else if (error.message?.toLowerCase().includes("already registered") ||
+                     error.message?.toLowerCase().includes("user already exists")) {
+            toast({
+              title: "Email już zarejestrowany",
+              description: "To konto już istnieje. Spróbuj się zalogować lub użyj opcji 'Zapomniałeś hasła?'",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Błąd rejestracji",
+              description: error.message || "Nie udało się utworzyć konta",
+              variant: "destructive",
+            });
+          }
         } else {
           toast({
             title: "Sprawdź swoją skrzynkę email! 📧",
@@ -282,6 +323,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setErrors({});
     setEmailWarning(null);
     setView("login");
+    // Don't reset lastRegistrationAttempt to maintain cooldown across form resets
   };
 
   const isLockedOut = lockedUntil && Date.now() < lockedUntil;
