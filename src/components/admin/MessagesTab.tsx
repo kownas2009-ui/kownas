@@ -13,7 +13,9 @@ import {
   Check,
   Trash2,
   Clock,
-  Reply
+  Reply,
+  Plus,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -29,6 +31,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ContactMessage {
   id: string;
@@ -42,15 +51,30 @@ interface ContactMessage {
   created_at: string;
 }
 
+interface StudentProfile {
+  user_id: string;
+  full_name: string;
+  phone: string | null;
+  email?: string;
+}
+
 const MessagesTab = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
+  
+  // New message state
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [newMessageText, setNewMessageText] = useState("");
+  const [sendingNew, setSendingNew] = useState(false);
 
   useEffect(() => {
     fetchMessages();
+    fetchStudents();
   }, []);
 
   const fetchMessages = async () => {
@@ -68,6 +92,81 @@ const MessagesTab = () => {
       toast.error("Błąd podczas ładowania wiadomości");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      // Get profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone")
+        .order("full_name");
+
+      if (profilesError) throw profilesError;
+
+      // Get emails from edge function
+      const { data: verificationData } = await supabase.functions.invoke(
+        "get-users-verification-status"
+      );
+      
+      const emailMap: Record<string, string> = {};
+      if (verificationData?.users) {
+        Object.entries(verificationData.users).forEach(([userId, data]: [string, any]) => {
+          emailMap[userId] = data.email;
+        });
+      }
+
+      // Combine data
+      const studentsWithEmail = (profiles || []).map(p => ({
+        ...p,
+        email: emailMap[p.user_id] || ""
+      })).filter(s => s.email); // Only show students with email
+
+      setStudents(studentsWithEmail);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
+
+  const handleSendNewMessage = async () => {
+    if (!selectedStudent || !newMessageText.trim()) return;
+
+    const student = students.find(s => s.user_id === selectedStudent);
+    if (!student || !student.email) {
+      toast.error("Nie można znaleźć emaila ucznia");
+      return;
+    }
+
+    setSendingNew(true);
+    try {
+      const timestamp = new Date().toISOString();
+      const adminMessage = `[${timestamp}] ${newMessageText.trim()}`;
+
+      const { error } = await supabase
+        .from("contact_messages")
+        .insert({
+          sender_name: student.full_name,
+          sender_email: student.email,
+          sender_phone: student.phone,
+          message: "📩 Wiadomość od Anety",
+          is_read: true,
+          admin_reply: adminMessage,
+          replied_at: timestamp
+        });
+
+      if (error) throw error;
+
+      toast.success("Wiadomość wysłana!");
+      setShowNewMessage(false);
+      setSelectedStudent("");
+      setNewMessageText("");
+      fetchMessages();
+    } catch (error) {
+      console.error("Error sending new message:", error);
+      toast.error("Błąd podczas wysyłania wiadomości");
+    } finally {
+      setSendingNew(false);
     }
   };
 
@@ -164,20 +263,101 @@ const MessagesTab = () => {
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Messages List */}
-      <div className="bg-card/80 backdrop-blur-sm rounded-3xl border border-border shadow-soft overflow-hidden">
-        <div className="p-6 border-b border-border">
-          <h2 className="font-display text-xl font-semibold flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            Wiadomości od uczniów
-            {unreadCount > 0 && (
-              <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                {unreadCount} nowe
-              </span>
-            )}
-          </h2>
-        </div>
+    <div className="space-y-6">
+      {/* New Message Form */}
+      <AnimatePresence>
+        {showNewMessage && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-card/80 backdrop-blur-sm rounded-3xl border border-primary/30 shadow-soft overflow-hidden"
+          >
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary" />
+                Nowa wiadomość do ucznia
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowNewMessage(false);
+                  setSelectedStudent("");
+                  setNewMessageText("");
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Wybierz ucznia</label>
+                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz ucznia..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {students.map((student) => (
+                      <SelectItem key={student.user_id} value={student.user_id}>
+                        {student.full_name} ({student.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Wiadomość</label>
+                <Textarea
+                  placeholder="Napisz wiadomość..."
+                  value={newMessageText}
+                  onChange={(e) => setNewMessageText(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </div>
+              <Button
+                variant="hero"
+                className="w-full"
+                onClick={handleSendNewMessage}
+                disabled={sendingNew || !selectedStudent || !newMessageText.trim()}
+              >
+                {sendingNew ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Wyślij wiadomość
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Messages List */}
+        <div className="bg-card/80 backdrop-blur-sm rounded-3xl border border-border shadow-soft overflow-hidden">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              Wiadomości
+              {unreadCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                  {unreadCount} nowe
+                </span>
+              )}
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewMessage(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Nowa
+            </Button>
+          </div>
 
         <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
           <AnimatePresence>
@@ -356,6 +536,7 @@ const MessagesTab = () => {
         )}
       </div>
     </div>
+  </div>
   );
 };
 
