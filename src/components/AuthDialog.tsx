@@ -295,35 +295,51 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     }
   };
 
-  // Normalize phone number - extract digits only for comparison
+  // Normalize phone number - extract digits only, remove leading 48 or +48
   const normalizePhone = (phoneNumber: string): string => {
-    return phoneNumber.replace(/\D/g, '').replace(/^48/, ''); // Remove non-digits and leading 48
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    // Remove leading 48 (country code)
+    if (digitsOnly.startsWith('48') && digitsOnly.length > 9) {
+      return digitsOnly.slice(2);
+    }
+    return digitsOnly;
   };
 
   const checkPhoneUniqueness = async (phoneNumber: string): Promise<boolean> => {
     if (!phoneNumber.trim()) return true;
     
     const normalizedInput = normalizePhone(phoneNumber);
+    console.log('Checking phone uniqueness for:', normalizedInput);
+    
     if (normalizedInput.length < 9) return true; // Too short to check
     
-    // Check for exact match and normalized match
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('phone')
-      .not('phone', 'is', null);
-    
-    if (error) {
-      console.error('Error checking phone uniqueness:', error);
-      return true; // Allow registration if check fails
+    try {
+      // Fetch all phones from profiles
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone')
+        .not('phone', 'is', null);
+      
+      if (error) {
+        console.error('Error checking phone uniqueness:', error);
+        return true; // Allow registration if check fails
+      }
+      
+      console.log('Existing phones in DB:', data);
+      
+      // Check if any existing phone matches when normalized
+      const isDuplicate = data?.some(profile => {
+        const existingNormalized = normalizePhone(profile.phone || '');
+        console.log('Comparing:', normalizedInput, 'vs', existingNormalized);
+        return existingNormalized === normalizedInput;
+      });
+      
+      console.log('Is duplicate:', isDuplicate);
+      return !isDuplicate; // Return true if phone is unique
+    } catch (err) {
+      console.error('Phone check error:', err);
+      return true;
     }
-    
-    // Check if any existing phone matches when normalized
-    const isDuplicate = data?.some(profile => {
-      const existingNormalized = normalizePhone(profile.phone || '');
-      return existingNormalized === normalizedInput;
-    });
-    
-    return !isDuplicate; // Return true if phone is unique
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -433,27 +449,39 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           formattedPhone
         );
         if (error) {
-          // Handle rate limit error specifically
-          if (error.message?.toLowerCase().includes("rate limit") || 
-              error.message?.toLowerCase().includes("too many requests") ||
-              error.message?.toLowerCase().includes("email rate limit")) {
+          const errorMsg = error.message?.toLowerCase() || '';
+          console.log('Registration error:', error.message);
+          
+          // Handle rate limit error
+          if (errorMsg.includes("rate limit") || 
+              errorMsg.includes("too many requests") ||
+              errorMsg.includes("email rate limit") ||
+              errorMsg.includes("429")) {
             toast({
-              title: "Błąd serwera",
-              description: "Spróbuj ponownie za chwilę.",
+              title: "Zbyt wiele prób",
+              description: "Poczekaj 60 sekund przed ponowną próbą rejestracji.",
               variant: "destructive",
-              duration: 10000,
+              duration: 12000,
             });
-          } else if (error.message?.toLowerCase().includes("already registered") ||
-                     error.message?.toLowerCase().includes("user already exists")) {
+          } else if (errorMsg.includes("already registered") ||
+                     errorMsg.includes("user already exists") ||
+                     errorMsg.includes("already been registered")) {
             toast({
               title: "Email już zarejestrowany",
               description: "To konto już istnieje. Spróbuj się zalogować lub użyj opcji 'Zapomniałeś hasła?'",
               variant: "destructive",
             });
+          } else if (errorMsg.includes("phone") || errorMsg.includes("unique")) {
+            setErrors({ phone: "Ten numer telefonu jest już używany. Wpisz inny numer." });
+            toast({
+              title: "Numer telefonu zajęty",
+              description: "Ten numer telefonu jest już przypisany do innego konta.",
+              variant: "destructive",
+            });
           } else {
             toast({
               title: "Błąd rejestracji",
-              description: error.message || "Nie udało się utworzyć konta",
+              description: error.message || "Nie udało się utworzyć konta. Spróbuj ponownie.",
               variant: "destructive",
             });
           }
