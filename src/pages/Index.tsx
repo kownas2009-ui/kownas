@@ -9,7 +9,6 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import CustomCursor from "@/components/CustomCursor";
 import InteractivePeriodicTable from "@/components/InteractivePeriodicTable";
-import ChemistryQuiz from "@/components/ChemistryQuiz";
 import SuccessCounter from "@/components/SuccessCounter";
 import ChemistryFacts from "@/components/ChemistryFacts";
 import PageLoader from "@/components/PageLoader";
@@ -128,7 +127,6 @@ const Index = () => {
         <section id="testimonials">
           <Testimonials />
         </section>
-        <ChemistryQuiz />
         <section id="faq">
           <FAQ />
         </section>
