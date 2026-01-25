@@ -74,12 +74,14 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
         .from("bookings")
         .select("booking_time, status")
         .eq("booking_date", dateStr)
-        .neq("status", "cancelled"); // Only get non-cancelled bookings at DB level
+        .in("status", ["pending", "confirmed"]); // Only get active bookings (pending or confirmed)
       
       if (error) throw error;
       
-      // Map only active bookings (confirmed or pending) as booked
-      setBookedSlots((data || []).map(b => b.booking_time));
+      // Map only active bookings as booked
+      const activeSlots = (data || []).map(b => b.booking_time);
+      console.log("Active booked slots for", dateStr, ":", activeSlots);
+      setBookedSlots(activeSlots);
     } catch (error) {
       console.error("Error fetching slots:", error);
       setBookedSlots([]);
