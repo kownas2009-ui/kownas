@@ -196,35 +196,31 @@ const Dashboard = () => {
 
   // Filter bookings: 
   // - Upcoming: future bookings that are not cancelled
-  // - Past: completed bookings (max 7 days old) and late-cancelled (within 24h of lesson - needs payment)
+  // - Past: completed bookings (max 7 days old), cancelled bookings (max 10 days old)
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
   
   const upcomingBookings = bookings.filter(
     (b) => new Date(b.booking_date) >= now && b.status !== 'cancelled'
   );
   
-  // Past bookings: show only last 7 days
-  // For cancelled bookings: only show if cancelled within 24h of lesson (late cancellation = 50% fee)
+  // Past bookings filtering:
+  // - Completed (confirmed/pending): show up to 7 days after lesson
+  // - Cancelled: show up to 10 days after lesson date (for tracking late cancellation fees)
   const pastBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_date);
     const isInPast = bookingDate < now;
-    const isWithinSevenDays = bookingDate >= sevenDaysAgo;
     
     if (!isInPast) return false;
-    if (!isWithinSevenDays) return false;
     
-    // If cancelled, only show if it was a late cancellation (within 24h of lesson)
     if (b.status === 'cancelled') {
-      // Check if cancellation was late (lesson was within 24h when cancelled)
-      // We approximate by checking if the booking_date was close to created_at or now
-      const lessonDateTime = new Date(`${b.booking_date}T${b.booking_time}`);
-      const hoursFromNowToLesson = (lessonDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      // If lesson is in past and was cancelled, it's a late cancellation if lesson time has passed
-      return true; // Show cancelled past bookings as they may need payment
+      // Cancelled bookings: keep for 10 days
+      return bookingDate >= tenDaysAgo;
     }
     
-    return true;
+    // Completed bookings: keep for 7 days
+    return bookingDate >= sevenDaysAgo;
   });
 
   const nextLesson = upcomingBookings[0];
