@@ -177,6 +177,7 @@ export type Database = {
           body: string
           created_at: string
           created_by_user_id: string
+          file_url: string | null
           id: string
           student_user_id: string
           title: string
@@ -186,6 +187,7 @@ export type Database = {
           body: string
           created_at?: string
           created_by_user_id: string
+          file_url?: string | null
           id?: string
           student_user_id: string
           title: string
@@ -195,6 +197,7 @@ export type Database = {
           body?: string
           created_at?: string
           created_by_user_id?: string
+          file_url?: string | null
           id?: string
           student_user_id?: string
           title?: string
