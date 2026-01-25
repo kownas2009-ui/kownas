@@ -18,10 +18,17 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const now = new Date();
+    
+    // 7 days ago for completed bookings (confirmed/pending)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    
+    // 10 days ago for cancelled bookings
+    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    const tenDaysAgoStr = tenDaysAgo.toISOString().split('T')[0];
 
-    console.log(`Cleaning up bookings older than ${sevenDaysAgoStr}`);
+    console.log(`Cleaning up completed bookings older than ${sevenDaysAgoStr}`);
+    console.log(`Cleaning up cancelled bookings older than ${tenDaysAgoStr}`);
 
     // Delete old confirmed/pending bookings (completed lessons older than 7 days)
     const { data: deletedCompleted, error: completedError } = await supabase
@@ -36,12 +43,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw completedError;
     }
 
-    // For cancelled bookings: delete those older than 7 days
-    // We keep late-cancelled ones for 7 days so admin can track unpaid fees
+    // Delete cancelled bookings older than 10 days
     const { data: deletedCancelled, error: cancelledError } = await supabase
       .from("bookings")
       .delete()
-      .lt("booking_date", sevenDaysAgoStr)
+      .lt("booking_date", tenDaysAgoStr)
       .eq("status", "cancelled")
       .select();
 
@@ -52,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const totalDeleted = (deletedCompleted?.length || 0) + (deletedCancelled?.length || 0);
 
-    console.log(`Deleted ${totalDeleted} old bookings (${deletedCompleted?.length || 0} completed, ${deletedCancelled?.length || 0} cancelled)`);
+    console.log(`Deleted ${totalDeleted} old bookings (${deletedCompleted?.length || 0} completed after 7 days, ${deletedCancelled?.length || 0} cancelled after 10 days)`);
 
     return new Response(
       JSON.stringify({
