@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,9 +12,10 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { LogIn, UserPlus, Loader2, ShieldAlert, KeyRound, ArrowLeft, Mail, Sparkles, AlertTriangle } from "lucide-react";
+import { LogIn, UserPlus, Loader2, ShieldAlert, KeyRound, ArrowLeft, Mail, Sparkles, AlertTriangle, Shield } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 interface AuthDialogProps {
   children: React.ReactNode;
@@ -130,6 +131,11 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   const [lastRegistrationAttempt, setLastRegistrationAttempt] = useState<number>(0);
+  
+  // hCaptcha state
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
+  const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "";
   
   const { signIn, signUp } = useAuth();
 
@@ -321,16 +327,37 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (lockedUntil && Date.now() < lockedUntil) {
+    if (!validateForm()) {
+      return;
+    }
+
+    // For registration, check phone uniqueness and captcha FIRST before any rate limiting
+    if (view === "register") {
+      // Check phone uniqueness BEFORE anything else
+      const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
+      if (!isPhoneUnique) {
+        setErrors({ phone: "Ten numer telefonu jest już używany" });
+        return;
+      }
+      
+      // Require captcha for registration
+      if (hCaptchaSiteKey && !captchaToken) {
+        toast({
+          title: "Potwierdź że nie jesteś robotem",
+          description: "Zaznacz pole CAPTCHA przed rejestracją",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Now check lockout (only for login, registration has its own cooldown)
+    if (view === "login" && lockedUntil && Date.now() < lockedUntil) {
       toast({
         title: "Zbyt wiele prób",
         description: `Spróbuj ponownie za ${lockoutRemaining} sekund`,
         variant: "destructive",
       });
-      return;
-    }
-
-    if (!validateForm()) {
       return;
     }
 
@@ -379,14 +406,6 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
           resetForm();
         }
       } else if (view === "register") {
-        // FIRST: Check phone uniqueness BEFORE rate limiting
-        const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
-        if (!isPhoneUnique) {
-          setErrors({ phone: "Ten numer telefonu jest już używany" });
-          setIsLoading(false);
-          return;
-        }
-        
         // Security: Check for SQL injection attempts in all inputs
         const sanitizedFullName = sanitizeInput(fullName);
         if (containsSqlInjection(email) || containsSqlInjection(fullName) || containsSqlInjection(phone)) {
@@ -499,6 +518,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     setErrors({});
     setEmailWarning(null);
     setView("login");
+    setCaptchaToken(null);
+    captchaRef.current?.resetCaptcha();
     // Don't reset lastRegistrationAttempt to maintain cooldown across form resets
   };
 
@@ -852,6 +873,28 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     />
                     {errors.confirmPassword && (
                       <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* hCaptcha for registration */}
+                {view === "register" && hCaptchaSiteKey && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="w-4 h-4" />
+                      <span>Potwierdź że nie jesteś robotem</span>
+                    </div>
+                    <HCaptcha
+                      ref={captchaRef}
+                      sitekey={hCaptchaSiteKey}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      onError={() => setCaptchaToken(null)}
+                    />
+                    {!captchaToken && (
+                      <p className="text-xs text-muted-foreground">
+                        Zaznacz powyższe pole aby kontynuować
+                      </p>
                     )}
                   </div>
                 )}
