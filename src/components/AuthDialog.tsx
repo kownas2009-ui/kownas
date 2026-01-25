@@ -136,8 +136,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const captchaRef = useRef<HCaptcha>(null);
-  // Use env variable or fallback to hCaptcha test key for development
-  const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "10000000-ffff-ffff-ffff-000000000001";
+  // Use env variable - must be configured with real hCaptcha key
+  const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "";
   
   const { signIn, signUp } = useAuth();
 
@@ -345,8 +345,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         return;
       }
       
-      // Require captcha for registration - ALWAYS required
-      if (!captchaToken) {
+      // Require captcha for registration - only if key is configured
+      if (hCaptchaSiteKey && !captchaToken) {
         setCaptchaError("Potwierdź że nie jesteś robotem");
         toast({
           title: "Wymagana weryfikacja CAPTCHA",
@@ -865,8 +865,8 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                   </div>
                 )}
 
-                {/* hCaptcha for registration - ALWAYS shown */}
-                {view === "register" && (
+                {/* hCaptcha for registration - shown only if key is configured */}
+                {view === "register" && hCaptchaSiteKey && (
                   <div className="flex flex-col items-center gap-2 py-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Shield className="w-4 h-4" />
