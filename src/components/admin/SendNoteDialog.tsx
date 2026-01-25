@@ -41,9 +41,9 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Max 10MB
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Plik jest za duży (max 10MB)");
+      // Max 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("Plik jest za duży (max 50MB)");
         return;
       }
       setSelectedFile(file);
@@ -208,7 +208,7 @@ const SendNoteDialog = ({ studentUserId, studentName, onSuccess, children }: Sen
                 className="w-full"
               >
                 <Paperclip className="w-4 h-4 mr-2" />
-                Dodaj plik (max 10MB)
+                Dodaj plik (max 50MB)
               </Button>
             )}
           </div>
