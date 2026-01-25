@@ -78,7 +78,7 @@ const LOCKOUT_DURATION_MS = 60000; // 1 minute
 // Debounce registration to prevent rate limits
 const REGISTRATION_COOLDOWN_MS = 3000; // 3 seconds between registration attempts
 
-type AuthView = "login" | "register" | "forgot-password" | "reset-sent";
+type AuthView = "login" | "register" | "forgot-password" | "reset-sent" | "resend-verification";
 
 const AuthDialog = ({ children }: AuthDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,6 +92,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; fullName?: string; phone?: string }>({});
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string>("");
+  const [resendLoading, setResendLoading] = useState(false);
   
   // Rate limiting state
   const [attempts, setAttempts] = useState(0);
@@ -198,6 +199,69 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
     }
   };
 
+  const handleResendVerification = async () => {
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors({ email: emailResult.error.errors[0]?.message });
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      // Use Supabase resend confirmation - this re-sends the verification email
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+        options: {
+          emailRedirectTo: window.location.origin,
+        }
+      });
+
+      if (error) {
+        if (error.message?.toLowerCase().includes("rate limit")) {
+          toast({
+            title: "Za dużo prób",
+            description: "Poczekaj 60 sekund przed ponowną próbą wysłania emaila.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Email wysłany! 📧",
+          description: `Link weryfikacyjny został wysłany na ${email.trim().toLowerCase()}. Sprawdź folder SPAM!`,
+          duration: 10000,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Błąd",
+        description: error.message || "Nie udało się wysłać emaila weryfikacyjnego",
+        variant: "destructive",
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const checkPhoneUniqueness = async (phoneNumber: string): Promise<boolean> => {
+    if (!phoneNumber.trim()) return true;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('phone')
+      .eq('phone', phoneNumber.trim())
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking phone uniqueness:', error);
+      return true; // Allow registration if check fails
+    }
+    
+    return !data; // Return true if phone is unique (no existing record)
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -230,12 +294,9 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
               errorMsg.includes("not confirmed") ||
               errorMsg.includes("confirm your email") ||
               errorMsg.includes("verify your email")) {
-            toast({
-              title: "⚠️ Konto wymaga weryfikacji",
-              description: "Twoje konto nie zostało jeszcze zweryfikowane. Sprawdź skrzynkę email (również folder SPAM) i kliknij w link aktywacyjny.",
-              variant: "destructive",
-              duration: 12000,
-            });
+            // Save email and show resend verification view
+            setRegisteredEmail(email.trim().toLowerCase());
+            setView("resend-verification");
             // Don't count this as a failed attempt
             setAttempts(Math.max(0, newAttempts - 1));
           } else if (newAttempts >= MAX_ATTEMPTS) {
@@ -272,6 +333,19 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             description: `Odczekaj ${waitTime} sekund przed ponowną próbą rejestracji`,
             variant: "destructive",
           });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Check phone uniqueness before registration
+        const isPhoneUnique = await checkPhoneUniqueness(phone.trim());
+        if (!isPhoneUnique) {
+          toast({
+            title: "Numer telefonu już zarejestrowany",
+            description: "Ten numer telefonu jest już przypisany do innego konta. Użyj innego numeru.",
+            variant: "destructive",
+          });
+          setErrors({ phone: "Ten numer telefonu jest już używany" });
           setIsLoading(false);
           return;
         }
@@ -393,6 +467,85 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                 <ArrowLeft className="w-4 h-4" />
                 Wróć do logowania
               </Button>
+            </motion.div>
+          ) : view === "resend-verification" ? (
+            <motion.div
+              key="resend-verification"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="py-4"
+            >
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl flex items-center gap-2">
+                  <Mail className="w-6 h-6 text-amber-500" />
+                  Konto wymaga weryfikacji
+                </DialogTitle>
+                <DialogDescription className="font-body">
+                  Twój email nie został jeszcze potwierdzony
+                </DialogDescription>
+              </DialogHeader>
+
+              <motion.div
+                className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 my-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                  ⚠️ Konto <strong>{registeredEmail || email}</strong> nie zostało jeszcze zweryfikowane. 
+                  Sprawdź swoją skrzynkę email (również folder <strong>SPAM</strong> lub <strong>Oferty</strong>) 
+                  i kliknij w link aktywacyjny.
+                </p>
+              </motion.div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                    Email do ponownego wysłania linku
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="twoj@email.pl"
+                    value={email || registeredEmail}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-card"
+                    disabled={resendLoading}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleResendVerification}
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Mail className="w-5 h-5 mr-2" />
+                      Wyślij ponownie link weryfikacyjny
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setView("login");
+                    setErrors({});
+                  }}
+                  className="w-full gap-2"
+                  disabled={resendLoading}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Wróć do logowania
+                </Button>
+              </div>
             </motion.div>
           ) : view === "forgot-password" ? (
             <motion.div
