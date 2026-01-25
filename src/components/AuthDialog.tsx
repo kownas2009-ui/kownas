@@ -86,10 +86,12 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; fullName?: string; phone?: string }>({});
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
   
   // Rate limiting state
   const [attempts, setAttempts] = useState(0);
@@ -154,6 +156,10 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
       const phoneResult = phoneSchema.safeParse(phone);
       if (!phoneResult.success) {
         newErrors.phone = phoneResult.error.errors[0]?.message;
+      }
+      // Validate password confirmation
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = "Hasła nie są identyczne";
       }
     }
 
@@ -301,10 +307,12 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             });
           }
         } else {
+          const userEmail = email.trim().toLowerCase();
+          setRegisteredEmail(userEmail);
           toast({
             title: "Sprawdź swoją skrzynkę email! 📧",
-            description: "Wysłaliśmy link weryfikacyjny na podany adres email. Kliknij w link, aby aktywować konto.",
-            duration: 10000,
+            description: `Wysłaliśmy link weryfikacyjny na ${userEmail}. Sprawdź również folder SPAM.`,
+            duration: 12000,
           });
           setIsOpen(false);
           resetForm();
@@ -324,6 +332,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
   const resetForm = () => {
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
     setFullName("");
     setPhone("");
     setErrors({});
@@ -589,6 +598,29 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                     </p>
                   )}
                 </div>
+
+                {view === "register" && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                      Powtórz hasło
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="bg-card"
+                      required
+                      minLength={8}
+                      maxLength={72}
+                      disabled={isLoading || isLockedOut}
+                      autoComplete="new-password"
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+                )}
 
                 {view === "login" && (
                   <div className="text-right">
