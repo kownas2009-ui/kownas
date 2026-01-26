@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, addMonths, subMonths } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
   TrendingUp, 
@@ -9,8 +9,11 @@ import {
   Calendar as CalendarIcon,
   ArrowUp,
   ArrowDown,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Booking {
   id: string;
@@ -33,16 +36,17 @@ interface MonthlyStatsProps {
 }
 
 const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
   const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonthStart = startOfMonth(now);
-    const currentMonthEnd = endOfMonth(now);
+    const currentMonthStart = startOfMonth(selectedMonth);
+    const currentMonthEnd = endOfMonth(selectedMonth);
     
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = subMonths(selectedMonth, 1);
     const lastMonthStart = startOfMonth(lastMonth);
     const lastMonthEnd = endOfMonth(lastMonth);
 
-    // Filter confirmed bookings for current month
+    // Filter confirmed bookings for selected month
     const currentMonthBookings = bookings.filter(b => {
       const date = new Date(b.booking_date);
       return b.status === "confirmed" && isWithinInterval(date, {
@@ -51,7 +55,7 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
       });
     });
 
-    // Filter confirmed bookings for last month
+    // Filter confirmed bookings for previous month (for comparison)
     const lastMonthBookings = bookings.filter(b => {
       const date = new Date(b.booking_date);
       return b.status === "confirmed" && isWithinInterval(date, {
@@ -89,16 +93,26 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
       ? Math.round(((currentMonthEarnings - lastMonthEarnings) / lastMonthEarnings) * 100)
       : currentMonthEarnings > 0 ? 100 : 0;
 
+    // Check if selected month is current month
+    const now = new Date();
+    const isCurrentMonth = selectedMonth.getMonth() === now.getMonth() && 
+                          selectedMonth.getFullYear() === now.getFullYear();
+
     return {
-      currentMonth: format(now, "LLLL yyyy", { locale: pl }),
+      currentMonth: format(selectedMonth, "LLLL yyyy", { locale: pl }),
       students: currentMonthStudents,
       studentChange,
       lessons: currentMonthLessons,
       lessonsChange,
       earnings: currentMonthEarnings,
       earningsChange,
+      isCurrentMonth,
     };
-  }, [bookings, pricePerLesson]);
+  }, [bookings, pricePerLesson, selectedMonth]);
+
+  const goToPreviousMonth = () => setSelectedMonth(prev => subMonths(prev, 1));
+  const goToNextMonth = () => setSelectedMonth(prev => addMonths(prev, 1));
+  const goToCurrentMonth = () => setSelectedMonth(new Date());
 
   const statCards = [
     {
@@ -130,14 +144,48 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
   return (
     <div className="mb-8">
       <motion.div 
-        className="flex items-center gap-2 mb-4"
+        className="flex items-center justify-between mb-4"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Sparkles className="w-5 h-5 text-primary" />
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          Statystyki: {stats.currentMonth}
-        </h2>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h2 className="font-display text-xl font-semibold text-foreground">
+            Statystyki: {stats.currentMonth}
+          </h2>
+          {!stats.isCurrentMonth && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={goToCurrentMonth}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              (wróć do bieżącego)
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToPreviousMonth}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextMonth}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
