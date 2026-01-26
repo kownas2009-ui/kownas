@@ -56,6 +56,44 @@ const BlockedDaysManager = () => {
   useEffect(() => {
     fetchBlockedDays();
     fetchBlockedTimeSlots();
+
+    // Set up real-time subscriptions
+    const blockedDaysChannel = supabase
+      .channel('blocked-days-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blocked_days'
+        },
+        (payload) => {
+          console.log('Blocked day change:', payload.eventType);
+          fetchBlockedDays();
+        }
+      )
+      .subscribe();
+
+    const blockedTimeSlotsChannel = supabase
+      .channel('blocked-time-slots-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blocked_time_slots'
+        },
+        (payload) => {
+          console.log('Blocked time slot change:', payload.eventType);
+          fetchBlockedTimeSlots();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(blockedDaysChannel);
+      supabase.removeChannel(blockedTimeSlotsChannel);
+    };
   }, []);
 
   const fetchBlockedDays = async () => {
