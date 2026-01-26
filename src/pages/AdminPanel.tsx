@@ -54,6 +54,10 @@ interface Booking {
   created_at: string;
   user_id: string;
   is_paid: boolean;
+  school_type?: string | null;
+  subject?: string | null;
+  level?: string | null;
+  class_number?: number | null;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -240,7 +244,7 @@ const NextStudentCard = ({ booking, onClose }: { booking: Booking | null; onClos
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
             <FlaskConical className="w-4 h-4" />
             <span className="text-sm">{booking.lesson_type}</span>
@@ -252,6 +256,31 @@ const NextStudentCard = ({ booking, onClose }: { booking: Booking | null; onClos
             </div>
           )}
         </div>
+
+        {/* School details in next student card */}
+        {(booking as Booking).school_type && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <span className="px-3 py-1 bg-white/15 rounded-full text-xs font-medium">
+              {(booking as Booking).school_type === "podstawowa" && "SP"}
+              {(booking as Booking).school_type === "liceum" && "LO"}
+              {(booking as Booking).school_type === "technikum" && "Tech"}
+            </span>
+            <span className="px-3 py-1 bg-white/15 rounded-full text-xs font-medium">
+              {(booking as Booking).subject === "chemia" ? "Chemia" : 
+               (booking as Booking).subject === "fizyka" ? "Fizyka" : "Chemia"}
+            </span>
+            {(booking as Booking).level && (
+              <span className="px-3 py-1 bg-white/15 rounded-full text-xs font-medium">
+                {(booking as Booking).level === "podstawowy" ? "Podst." : "Rozsz."}
+              </span>
+            )}
+            {(booking as Booking).class_number && (
+              <span className="px-3 py-1 bg-white/15 rounded-full text-xs font-medium">
+                Kl. {(booking as Booking).class_number}
+              </span>
+            )}
+          </div>
+        )}
 
         <motion.div 
           className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between"
@@ -779,6 +808,34 @@ const AdminPanel = () => {
                     </div>
                   </div>
 
+                  {/* School details */}
+                  {selectedBookingDetails.school_type && (
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
+                      <p className="text-xs text-muted-foreground mb-2">Szczegóły zajęć</p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1 bg-primary/10 rounded-full text-sm font-medium">
+                          {selectedBookingDetails.school_type === "podstawowa" && "Szkoła podstawowa"}
+                          {selectedBookingDetails.school_type === "liceum" && "Liceum"}
+                          {selectedBookingDetails.school_type === "technikum" && "Technikum"}
+                        </span>
+                        <span className="px-3 py-1 bg-secondary/10 rounded-full text-sm font-medium">
+                          {selectedBookingDetails.subject === "chemia" ? "Chemia" : 
+                           selectedBookingDetails.subject === "fizyka" ? "Fizyka" : "Chemia"}
+                        </span>
+                        {selectedBookingDetails.level && (
+                          <span className="px-3 py-1 bg-accent/50 rounded-full text-sm font-medium">
+                            {selectedBookingDetails.level === "podstawowy" ? "Poziom podstawowy" : "Poziom rozszerzony"}
+                          </span>
+                        )}
+                        {selectedBookingDetails.class_number && (
+                          <span className="px-3 py-1 bg-muted rounded-full text-sm font-medium">
+                            Klasa {selectedBookingDetails.class_number}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Payment status */}
                   <div className={`p-4 rounded-xl flex items-center justify-between ${
                     selectedBookingDetails.is_paid 
@@ -1005,7 +1062,7 @@ const AdminPanel = () => {
                             <h3 className="font-display font-semibold text-lg">
                               {booking.profiles?.full_name || "Uczeń"}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground font-body flex-wrap">
                               <span className="flex items-center gap-1">
                                 <FlaskConical className="w-3 h-3" />
                                 {booking.lesson_type}
@@ -1014,6 +1071,16 @@ const AdminPanel = () => {
                                 <span className="flex items-center gap-1">
                                   <Phone className="w-3 h-3" />
                                   {booking.profiles.phone}
+                                </span>
+                              )}
+                              {booking.school_type && (
+                                <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full">
+                                  {booking.school_type === "podstawowa" && "SP"}
+                                  {booking.school_type === "liceum" && "LO"}
+                                  {booking.school_type === "technikum" && "Tech"}
+                                  {booking.subject && ` • ${booking.subject === "chemia" ? "Ch" : "Fiz"}`}
+                                  {booking.level && ` • ${booking.level === "podstawowy" ? "P" : "R"}`}
+                                  {booking.class_number && ` • kl.${booking.class_number}`}
                                 </span>
                               )}
                             </div>
