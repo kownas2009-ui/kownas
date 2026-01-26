@@ -24,6 +24,28 @@ const StudentNotes = () => {
   useEffect(() => {
     if (user) {
       fetchNotes();
+      
+      // Set up real-time subscription for notes
+      const channel = supabase
+        .channel('student-notes-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'student_notes',
+            filter: `student_user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Note change detected:', payload.eventType);
+            fetchNotes(); // Refresh notes on any change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
