@@ -56,8 +56,24 @@ const Services = () => {
   };
 
   return (
-    <section className="py-24 px-4">
-      <div className="max-w-5xl mx-auto">
+    <section className="py-24 px-4 relative">
+      {/* Section background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
+            filter: "blur(80px)",
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
         <motion.div 
           className="text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -65,17 +81,22 @@ const Services = () => {
           viewport={{ once: true }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/20 mb-6"
-            whileHover={{ scale: 1.05 }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass-card premium-glow mb-6"
+            whileHover={{ scale: 1.05, y: -2 }}
           >
-            <Sparkles className="w-4 h-4 text-secondary" />
-            <span className="text-sm font-medium text-secondary-foreground">Cały tydzień</span>
+            <motion.div
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Sparkles className="w-5 h-5 text-secondary" />
+            </motion.div>
+            <span className="text-sm font-semibold text-foreground">Cały tydzień dostępna</span>
           </motion.div>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Oferta zajęć
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4">
+            <span className="text-gradient-animated">Oferta zajęć</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-body">
-            Zajęcia online przez cały tydzień. Każda lekcja trwa 60 minut.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-body">
+            Zajęcia online przez cały tydzień. Każda lekcja trwa <span className="text-primary font-semibold">60 minut</span>.
           </p>
         </motion.div>
 
@@ -91,23 +112,38 @@ const Services = () => {
               key={service.title}
               variants={cardVariants}
               whileHover={{ 
-                y: -10,
+                y: -12,
                 transition: { type: "spring", stiffness: 300 }
               }}
-              className={`relative p-8 rounded-2xl border transition-all duration-300 ${
+              className={`relative p-8 rounded-3xl border transition-all duration-500 card-3d ${
                 service.popular
-                  ? "bg-primary text-primary-foreground border-primary shadow-card"
-                  : "bg-card border-border shadow-soft hover:shadow-card"
+                  ? "bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground border-primary/50 shadow-lg"
+                  : "glass-card border-border/50 hover:border-primary/30 hover:premium-glow"
               }`}
             >
+              {/* Card glow effect */}
+              {service.popular && (
+                <motion.div
+                  className="absolute inset-0 rounded-3xl"
+                  style={{
+                    background: "radial-gradient(circle at 50% 0%, hsl(var(--secondary) / 0.3) 0%, transparent 50%)",
+                  }}
+                  animate={{
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+              )}
+
               {service.popular && (
                 <motion.div 
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full gradient-accent text-accent-foreground text-sm font-semibold"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-gradient-to-r from-secondary via-yellow-400 to-secondary text-secondary-foreground text-sm font-bold shadow-lg"
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 0.5, type: "spring" }}
+                  whileHover={{ scale: 1.1 }}
                 >
-                  Najpopularniejsze
+                  ⭐ Najpopularniejsze
                 </motion.div>
               )}
 
@@ -130,21 +166,22 @@ const Services = () => {
                 {service.subtitle}
               </p>
 
+              {/* Price with animated glow */}
               <div className="flex items-baseline gap-1 mb-6">
                 <motion.span 
-                  className="text-4xl font-display font-bold"
+                  className={`text-5xl font-display font-bold ${service.popular ? "" : "text-gradient-animated"}`}
                   initial={{ scale: 0.5 }}
                   whileInView={{ scale: 1 }}
                   viewport={{ once: true }}
                 >
                   {service.price}
                 </motion.span>
-                <span className={`${service.popular ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                <span className={`text-lg ${service.popular ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
                   zł / lekcja
                 </span>
               </div>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-4 mb-8">
                 {service.features.map((feature, i) => (
                   <motion.li 
                     key={feature} 
@@ -155,18 +192,21 @@ const Services = () => {
                     transition={{ delay: i * 0.1 }}
                   >
                     <motion.div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        service.popular ? "bg-secondary/20" : "bg-primary/10"
+                      }`}
                       whileHover={{ scale: 1.2, rotate: 360 }}
                       transition={{ duration: 0.3 }}
                     >
                       <Check
-                        className={`w-5 h-5 flex-shrink-0 ${
+                        className={`w-4 h-4 ${
                           service.popular ? "text-secondary" : "text-primary"
                         }`}
                       />
                     </motion.div>
                     <span
                       className={`font-body ${
-                        service.popular ? "text-primary-foreground/90" : "text-muted-foreground"
+                        service.popular ? "text-primary-foreground/90" : "text-foreground"
                       }`}
                     >
                       {feature}
@@ -177,21 +217,23 @@ const Services = () => {
 
               <BookingDialog lessonType={service.title}>
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="relative"
                 >
                   <Button
                     variant={service.popular ? "accent" : "hero"}
                     size="lg"
-                    className="w-full group relative overflow-hidden"
+                    className="w-full group relative overflow-hidden font-semibold text-base"
                   >
                     <motion.span
-                      className="absolute inset-0 bg-white/20"
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                       initial={{ x: "-100%" }}
                       whileHover={{ x: "100%" }}
-                      transition={{ duration: 0.5 }}
+                      transition={{ duration: 0.6 }}
                     />
-                    Wybierz pakiet
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Wybierz i zarezerwuj
                   </Button>
                 </motion.div>
               </BookingDialog>
