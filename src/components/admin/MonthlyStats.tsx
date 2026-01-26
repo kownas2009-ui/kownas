@@ -188,10 +188,16 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <motion.div 
+        key={stats.currentMonth}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         {statCards.map((card, index) => (
           <motion.div
-            key={card.label}
+            key={`${stats.currentMonth}-${card.label}`}
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: index * 0.1, type: "spring" }}
@@ -255,7 +261,7 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
             </motion.div>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };
