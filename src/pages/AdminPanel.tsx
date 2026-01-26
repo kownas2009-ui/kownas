@@ -836,7 +836,7 @@ const AdminPanel = () => {
                         </Button>
                         <Button
                           variant="outline"
-                          className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50"
+                          className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                           onClick={() => {
                             updateBookingStatus(selectedBookingDetails.id, "cancelled");
                             setSelectedBookingDetails(null);
@@ -846,6 +846,31 @@ const AdminPanel = () => {
                           Anuluj
                         </Button>
                       </>
+                    )}
+                    {selectedBookingDetails.status === "confirmed" && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2 text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => {
+                          updateBookingStatus(selectedBookingDetails.id, "cancelled");
+                          setSelectedBookingDetails(null);
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                        Anuluj zajęcia
+                      </Button>
+                    )}
+                    {selectedBookingDetails.status === "cancelled" && (
+                      <Button
+                        className="flex-1 gap-2"
+                        onClick={() => {
+                          updateBookingStatus(selectedBookingDetails.id, "confirmed");
+                          setSelectedBookingDetails(null);
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                        Przywróć rezerwację
+                      </Button>
                     )}
                     {/* Send note button */}
                     <SendNoteDialog
