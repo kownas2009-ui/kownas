@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "Jak wygląda płatność?",
-    answer: "Płatność odbywa się przez BLIK na 15 minut przed rozpoczęciem lekcji. Szczegóły płatności otrzymasz po potwierdzeniu rezerwacji."
+    answer: "Płatność odbywa się przez BLIK maksymalnie 24 godziny przed rozpoczęciem lekcji. Szczegóły płatności otrzymasz po potwierdzeniu rezerwacji."
   }
 ];
 

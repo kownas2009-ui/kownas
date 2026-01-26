@@ -253,7 +253,7 @@ const Services = () => {
               Metoda płatności
             </h3>
             <p className="text-muted-foreground font-body">
-              Szybka płatność BLIKIEM
+              BLIK 24h przed zajęciami
             </p>
           </div>
           
@@ -270,13 +270,13 @@ const Services = () => {
               </div>
               <div>
                 <h4 className="font-display font-semibold text-foreground">BLIK</h4>
-                <p className="text-sm text-muted-foreground">15 min przed zajęciami</p>
+                <p className="text-sm text-muted-foreground">24h przed zajęciami</p>
               </div>
             </div>
             <div className="bg-muted/50 rounded-xl p-4 text-sm">
               <p className="text-muted-foreground mb-1">Numer telefonu do BLIK:</p>
               <p className="text-foreground font-medium text-lg">507 125 569</p>
-              <p className="text-muted-foreground mt-2 text-xs">Wpisz kod BLIK w aplikacji bankowej maksymalnie 15 minut przed rozpoczęciem lekcji</p>
+              <p className="text-muted-foreground mt-2 text-xs">Wpisz kod BLIK w aplikacji bankowej maksymalnie 24h przed rozpoczęciem lekcji</p>
             </div>
           </motion.div>
 

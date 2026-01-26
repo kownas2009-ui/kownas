@@ -20,6 +20,7 @@ interface Booking {
   status: string;
   created_at: string;
   user_id: string;
+  is_paid: boolean;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -59,15 +60,19 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
       });
     });
 
-    // Unique students this month
-    const currentMonthStudents = new Set(currentMonthBookings.map(b => b.user_id)).size;
-    const lastMonthStudents = new Set(lastMonthBookings.map(b => b.user_id)).size;
+    // Filter PAID bookings for earnings calculation
+    const currentMonthPaidBookings = currentMonthBookings.filter(b => b.is_paid);
+    const lastMonthPaidBookings = lastMonthBookings.filter(b => b.is_paid);
 
-    // Lessons count
-    const currentMonthLessons = currentMonthBookings.length;
-    const lastMonthLessons = lastMonthBookings.length;
+    // Unique students this month (from paid bookings only)
+    const currentMonthStudents = new Set(currentMonthPaidBookings.map(b => b.user_id)).size;
+    const lastMonthStudents = new Set(lastMonthPaidBookings.map(b => b.user_id)).size;
 
-    // Earnings
+    // Lessons count (only paid lessons)
+    const currentMonthLessons = currentMonthPaidBookings.length;
+    const lastMonthLessons = lastMonthPaidBookings.length;
+
+    // Earnings (only from paid lessons)
     const currentMonthEarnings = currentMonthLessons * pricePerLesson;
     const lastMonthEarnings = lastMonthLessons * pricePerLesson;
 
