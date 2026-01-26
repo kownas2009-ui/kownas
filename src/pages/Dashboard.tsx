@@ -122,6 +122,53 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchData();
+      
+      // Set up real-time subscription for bookings
+      const bookingsChannel = supabase
+        .channel('student-bookings-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'bookings',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Booking change detected:', payload.eventType);
+            fetchData(); // Refresh data on any change
+          }
+        )
+        .subscribe();
+
+      // Set up real-time subscription for profile changes
+      const profileChannel = supabase
+        .channel('student-profile-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Profile change detected:', payload.eventType);
+            fetchData();
+          }
+        )
+        .subscribe();
+
+      // Auto-refresh every 30 seconds as fallback
+      const refreshInterval = setInterval(() => {
+        fetchData();
+      }, 30000);
+
+      return () => {
+        supabase.removeChannel(bookingsChannel);
+        supabase.removeChannel(profileChannel);
+        clearInterval(refreshInterval);
+      };
     }
   }, [user]);
 
