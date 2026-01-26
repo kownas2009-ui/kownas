@@ -371,6 +371,33 @@ const AdminPanel = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchData();
+      
+      // Set up real-time subscription for bookings
+      const channel = supabase
+        .channel('admin-bookings-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'bookings'
+          },
+          (payload) => {
+            console.log('Booking change detected:', payload.eventType);
+            fetchData(); // Refresh data on any change
+          }
+        )
+        .subscribe();
+
+      // Also set up auto-refresh every 30 seconds as fallback
+      const refreshInterval = setInterval(() => {
+        fetchData();
+      }, 30000);
+
+      return () => {
+        supabase.removeChannel(channel);
+        clearInterval(refreshInterval);
+      };
     }
   }, [isAdmin]);
 
