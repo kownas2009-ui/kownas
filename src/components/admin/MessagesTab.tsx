@@ -95,11 +95,19 @@ const MessagesTab = () => {
           
           if (payload.eventType === 'INSERT') {
             const newMsg = payload.new as ContactMessage;
-            setMessages(prev => [newMsg, ...prev]);
-            // Play sound if it's a new message from student (no admin_reply or empty message means student initiated)
-            if (newMsg.message && !newMsg.admin_reply) {
+            // Only play sound if it's a new message FROM student (has student message content, no admin_reply)
+            // If admin_reply exists and message is empty, it's admin initiating - don't notify
+            if (newMsg.message && newMsg.message.trim() && !newMsg.admin_reply) {
+              setMessages(prev => [newMsg, ...prev]);
               playNotificationSound();
               toast.info(`Nowa wiadomość od ${newMsg.sender_name}!`);
+            } else if (newMsg.admin_reply && (!newMsg.message || !newMsg.message.trim())) {
+              // Admin sent a new message - just add to list silently (already handled by local state update)
+              // Don't add again if we just sent it
+              setMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [newMsg, ...prev];
+              });
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedMsg = payload.new as ContactMessage;
@@ -114,8 +122,8 @@ const MessagesTab = () => {
               prev?.id === updatedMsg.id ? updatedMsg : prev
             );
             
-            // Play sound if student added a new message (message field changed)
-            if (updatedMsg.message !== oldMsg.message) {
+            // Play sound only if student added a new message (message field changed and has content)
+            if (updatedMsg.message !== oldMsg.message && updatedMsg.message && updatedMsg.message.trim()) {
               playNotificationSound();
               toast.info(`Nowa wiadomość od ${updatedMsg.sender_name}!`);
             }
@@ -128,10 +136,10 @@ const MessagesTab = () => {
       )
       .subscribe();
 
-    // Auto-refresh every 10 minutes as fallback
+    // Auto-refresh every 2 minutes as fallback
     const refreshInterval = setInterval(() => {
       fetchMessages();
-    }, 10 * 60 * 1000);
+    }, 120000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -205,6 +213,7 @@ const MessagesTab = () => {
       const timestamp = new Date().toISOString();
       const adminMessage = `[${timestamp}] ${newMessageText.trim()}`;
 
+      // Temporarily disable realtime notifications for this insert
       const { data, error } = await supabase
         .from("contact_messages")
         .insert({
@@ -222,9 +231,9 @@ const MessagesTab = () => {
 
       if (error) throw error;
 
-      toast.success("Wiadomość wysłana!");
+      toast.success(`Wiadomość wysłana do ${student.full_name}!`);
       
-      // Add new message to the list immediately
+      // Add new message to the list immediately (don't trigger notification)
       if (data) {
         setMessages(prev => [data, ...prev]);
       }
