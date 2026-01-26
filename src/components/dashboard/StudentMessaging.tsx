@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
+import useNotificationSound from "@/hooks/useNotificationSound";
 
 interface ContactMessage {
   id: string;
@@ -43,13 +44,69 @@ const StudentMessaging = () => {
   const [profile, setProfile] = useState<{ full_name: string; phone: string | null } | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const { playNotificationSound } = useNotificationSound();
+  const lastMessageCountRef = useRef<number>(0);
+  const lastAdminReplyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchMessages();
       fetchProfile();
+
+      // Set up realtime subscription
+      const channel = supabase
+        .channel('student-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'contact_messages',
+            filter: `sender_email=eq.${user.email}`
+          },
+          (payload) => {
+            console.log('Realtime message update:', payload);
+            
+            if (payload.eventType === 'INSERT') {
+              const newMsg = payload.new as ContactMessage;
+              setMessages(prev => [newMsg, ...prev]);
+              // Play sound if admin sent a new message (admin_reply exists)
+              if (newMsg.admin_reply) {
+                playNotificationSound();
+                toast.info("Nowa wiadomość od Anety!");
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedMsg = payload.new as ContactMessage;
+              const oldMsg = payload.old as Partial<ContactMessage>;
+              
+              setMessages(prev => prev.map(m => 
+                m.id === updatedMsg.id ? updatedMsg : m
+              ));
+              
+              // Play sound if admin_reply was added or updated
+              if (updatedMsg.admin_reply !== oldMsg.admin_reply) {
+                playNotificationSound();
+                toast.info("Nowa odpowiedź od Anety!");
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as ContactMessage).id;
+              setMessages(prev => prev.filter(m => m.id !== deletedId));
+            }
+          }
+        )
+        .subscribe();
+
+      // Auto-refresh every 10 minutes as fallback
+      const refreshInterval = setInterval(() => {
+        fetchMessages();
+      }, 10 * 60 * 1000);
+
+      return () => {
+        supabase.removeChannel(channel);
+        clearInterval(refreshInterval);
+      };
     }
-  }, [user]);
+  }, [user, playNotificationSound]);
 
   const fetchProfile = async () => {
     if (!user) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useNotificationSound from "@/hooks/useNotificationSound";
 
 interface ContactMessage {
   id: string;
@@ -71,11 +72,72 @@ const MessagesTab = () => {
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [newMessageText, setNewMessageText] = useState("");
   const [sendingNew, setSendingNew] = useState(false);
+  
+  const { playNotificationSound } = useNotificationSound();
+  const previousMessagesRef = useRef<ContactMessage[]>([]);
 
   useEffect(() => {
     fetchMessages();
     fetchStudents();
-  }, []);
+
+    // Set up realtime subscription for admin
+    const channel = supabase
+      .channel('admin-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contact_messages'
+        },
+        (payload) => {
+          console.log('Admin realtime message update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as ContactMessage;
+            setMessages(prev => [newMsg, ...prev]);
+            // Play sound if it's a new message from student (no admin_reply or empty message means student initiated)
+            if (newMsg.message && !newMsg.admin_reply) {
+              playNotificationSound();
+              toast.info(`Nowa wiadomość od ${newMsg.sender_name}!`);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as ContactMessage;
+            const oldMsg = payload.old as Partial<ContactMessage>;
+            
+            setMessages(prev => prev.map(m => 
+              m.id === updatedMsg.id ? updatedMsg : m
+            ));
+            
+            // Update selected message if it's the one being updated
+            setSelectedMessage(prev => 
+              prev?.id === updatedMsg.id ? updatedMsg : prev
+            );
+            
+            // Play sound if student added a new message (message field changed)
+            if (updatedMsg.message !== oldMsg.message) {
+              playNotificationSound();
+              toast.info(`Nowa wiadomość od ${updatedMsg.sender_name}!`);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as ContactMessage).id;
+            setMessages(prev => prev.filter(m => m.id !== deletedId));
+            setSelectedMessage(prev => prev?.id === deletedId ? null : prev);
+          }
+        }
+      )
+      .subscribe();
+
+    // Auto-refresh every 10 minutes as fallback
+    const refreshInterval = setInterval(() => {
+      fetchMessages();
+    }, 10 * 60 * 1000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(refreshInterval);
+    };
+  }, [playNotificationSound]);
 
   const fetchMessages = async () => {
     setLoading(true);
