@@ -309,7 +309,7 @@ const Hero = () => {
             opacity: { delay: 2 },
             y: { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
           }}
-          onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+          onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
