@@ -69,31 +69,43 @@ export type Database = {
         Row: {
           booking_date: string
           booking_time: string
+          class_number: number | null
           created_at: string
           id: string
           is_paid: boolean
           lesson_type: string
+          level: string | null
+          school_type: string | null
           status: string
+          subject: string | null
           user_id: string
         }
         Insert: {
           booking_date: string
           booking_time: string
+          class_number?: number | null
           created_at?: string
           id?: string
           is_paid?: boolean
           lesson_type: string
+          level?: string | null
+          school_type?: string | null
           status?: string
+          subject?: string | null
           user_id: string
         }
         Update: {
           booking_date?: string
           booking_time?: string
+          class_number?: number | null
           created_at?: string
           id?: string
           is_paid?: boolean
           lesson_type?: string
+          level?: string | null
+          school_type?: string | null
           status?: string
+          subject?: string | null
           user_id?: string
         }
         Relationships: [

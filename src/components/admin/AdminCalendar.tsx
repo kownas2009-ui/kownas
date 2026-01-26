@@ -15,6 +15,10 @@ interface Booking {
   created_at: string;
   user_id: string;
   is_paid: boolean;
+  school_type?: string | null;
+  subject?: string | null;
+  level?: string | null;
+  class_number?: number | null;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -87,6 +91,7 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
                   booking.status === "pending" && "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
                   booking.status === "cancelled" && "bg-red-500/20 text-red-700 dark:text-red-400 line-through"
                 )}
+                title={`${booking.school_type || ''} ${booking.subject || ''} ${booking.level || ''} kl.${booking.class_number || ''}`}
               >
                 {booking.booking_time} - {booking.profiles?.full_name?.split(" ")[0] || "Uczeń"}
               </motion.div>
@@ -214,6 +219,17 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
                             <FlaskConical className="w-3 h-3 ml-2" />
                             {booking.lesson_type}
                           </p>
+                          {booking.school_type && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {booking.school_type === "podstawowa" && "Szkoła podstawowa"}
+                              {booking.school_type === "liceum" && "Liceum"}
+                              {booking.school_type === "technikum" && "Technikum"}
+                              {" • "}
+                              {booking.subject === "chemia" ? "Chemia" : booking.subject === "fizyka" ? "Fizyka" : "Chemia"}
+                              {booking.level && ` • ${booking.level === "podstawowy" ? "Podst." : "Rozsz."}`}
+                              {booking.class_number && ` • Kl. ${booking.class_number}`}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <span className={cn(
