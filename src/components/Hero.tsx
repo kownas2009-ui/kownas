@@ -300,9 +300,9 @@ const Hero = () => {
           ))}
         </motion.div>
 
-        {/* Scroll indicator with glow */}
+        {/* Scroll indicator - positioned below stats */}
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          className="mt-12 flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, y: [0, 12, 0] }}
           transition={{ 
