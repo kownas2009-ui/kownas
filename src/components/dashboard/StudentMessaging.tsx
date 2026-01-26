@@ -96,10 +96,10 @@ const StudentMessaging = () => {
         )
         .subscribe();
 
-      // Auto-refresh every 10 minutes as fallback
+      // Auto-refresh every 2 minutes as fallback
       const refreshInterval = setInterval(() => {
         fetchMessages();
-      }, 10 * 60 * 1000);
+      }, 120000);
 
       return () => {
         supabase.removeChannel(channel);

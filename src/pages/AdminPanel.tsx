@@ -42,6 +42,7 @@ import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/adm
 import SendNoteDialog from "@/components/admin/SendNoteDialog";
 import UserManagement from "@/components/admin/UserManagement";
 import MessagesTab from "@/components/admin/MessagesTab";
+import SentNotesTab from "@/components/admin/SentNotesTab";
 import BlockedDaysManager from "@/components/admin/BlockedDaysManager";
 
 interface Booking {
@@ -351,7 +352,7 @@ const AdminPanel = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users" | "messages">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users" | "messages" | "notes">("list");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
 
   useEffect(() => {
@@ -389,10 +390,10 @@ const AdminPanel = () => {
         )
         .subscribe();
 
-      // Also set up auto-refresh every 30 seconds as fallback
+      // Also set up auto-refresh every 2 minutes as fallback
       const refreshInterval = setInterval(() => {
         fetchData();
-      }, 30000);
+      }, 120000);
 
       return () => {
         supabase.removeChannel(channel);
@@ -660,7 +661,7 @@ const AdminPanel = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar" | "users" | "messages")} className="w-auto">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "calendar" | "users" | "messages" | "notes")} className="w-auto">
             <TabsList className="bg-card/80 backdrop-blur-sm">
               <TabsTrigger value="list" className="gap-2">
                 <ListChecks className="w-4 h-4" />
@@ -677,6 +678,10 @@ const AdminPanel = () => {
               <TabsTrigger value="messages" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Wiadomości
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Notatki
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -891,7 +896,16 @@ const AdminPanel = () => {
 
         {/* Content based on active tab */}
         <AnimatePresence mode="wait">
-          {activeTab === "messages" ? (
+          {activeTab === "notes" ? (
+            <motion.div
+              key="notes"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <SentNotesTab />
+            </motion.div>
+          ) : activeTab === "messages" ? (
             <motion.div
               key="messages"
               initial={{ opacity: 0, x: 20 }}

@@ -159,10 +159,10 @@ const Dashboard = () => {
         )
         .subscribe();
 
-      // Auto-refresh every 30 seconds as fallback
+      // Auto-refresh every 2 minutes as fallback
       const refreshInterval = setInterval(() => {
         fetchData();
-      }, 30000);
+      }, 120000);
 
       return () => {
         supabase.removeChannel(bookingsChannel);
