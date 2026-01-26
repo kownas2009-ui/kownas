@@ -302,15 +302,18 @@ const Hero = () => {
 
         {/* Scroll indicator - positioned below stats */}
         <motion.div
-          className="mt-12 flex justify-center"
+          className="mt-12 flex justify-center cursor-pointer"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, y: [0, 12, 0] }}
           transition={{ 
             opacity: { delay: 2 },
             y: { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
           }}
+          onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 px-4 py-2 rounded-full hover:bg-primary/10 transition-colors">
             <span className="text-xs text-muted-foreground font-medium">Przewiń w dół</span>
             <motion.div
               className="relative"
