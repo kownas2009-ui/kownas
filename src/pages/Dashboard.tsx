@@ -46,6 +46,11 @@ interface Booking {
   booking_time: string;
   status: string;
   created_at: string;
+  school_type?: string | null;
+  subject?: string | null;
+  level?: string | null;
+  class_number?: number | null;
+  topic?: string | null;
 }
 
 interface Profile {
@@ -129,14 +134,57 @@ const Dashboard = () => {
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'UPDATE',
             schema: 'public',
             table: 'bookings',
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('Booking change detected:', payload.eventType);
-            fetchData(); // Refresh data on any change
+            console.log('Booking update detected:', payload);
+            const newRecord = payload.new as { status?: string; booking_date?: string; booking_time?: string };
+            const oldRecord = payload.old as { status?: string };
+            
+            // Check if status changed to cancelled (admin cancelled the lesson)
+            if (oldRecord?.status !== 'cancelled' && newRecord?.status === 'cancelled') {
+              toast.error("Lekcja została anulowana", {
+                description: `Twoja lekcja na ${newRecord.booking_date} o ${newRecord.booking_time} została anulowana przez nauczyciela.`,
+                duration: 10000,
+              });
+            }
+            
+            // Check if status changed to confirmed
+            if (oldRecord?.status === 'pending' && newRecord?.status === 'confirmed') {
+              toast.success("Lekcja potwierdzona! 🎉", {
+                description: `Twoja lekcja na ${newRecord.booking_date} o ${newRecord.booking_time} została potwierdzona.`,
+                duration: 8000,
+              });
+            }
+            
+            fetchData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'bookings',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'bookings',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchData();
           }
         )
         .subscribe();
@@ -549,6 +597,39 @@ const Dashboard = () => {
                                     <Clock className="w-4 h-4" />
                                     {booking.booking_time}
                                   </p>
+                                  {/* School details */}
+                                  {booking.school_type && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                      <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full text-primary font-medium">
+                                        {booking.school_type === "podstawowa" && "Szkoła podstawowa"}
+                                        {booking.school_type === "liceum" && "Liceum"}
+                                        {booking.school_type === "technikum" && "Technikum"}
+                                      </span>
+                                      <span className="text-xs px-2 py-0.5 bg-secondary/10 rounded-full text-secondary font-medium">
+                                        {booking.subject === "chemia" ? "Chemia" : 
+                                         booking.subject === "fizyka" ? "Fizyka" : "Chemia"}
+                                      </span>
+                                      {booking.level && (
+                                        <span className="text-xs px-2 py-0.5 bg-accent rounded-full font-medium">
+                                          {booking.level === "podstawowy" ? "Podstawowy" : "Rozszerzony"}
+                                        </span>
+                                      )}
+                                      {booking.class_number && (
+                                        <span className="text-xs px-2 py-0.5 bg-muted rounded-full font-medium">
+                                          Klasa {booking.class_number}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {/* Topic */}
+                                  {booking.topic && (
+                                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                      <span>📚</span>
+                                      <span className="truncate max-w-[200px]" title={booking.topic}>
+                                        {booking.topic}
+                                      </span>
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                               

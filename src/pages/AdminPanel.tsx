@@ -409,13 +409,46 @@ const AdminPanel = () => {
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
             schema: 'public',
             table: 'bookings'
           },
           (payload) => {
-            console.log('Booking change detected:', payload.eventType);
-            fetchData(); // Refresh data on any change
+            console.log('New booking detected:', payload);
+            const newBooking = payload.new as { booking_date?: string; booking_time?: string };
+            toast.success("Nowa rezerwacja! 🎉", {
+              description: `Nowa lekcja na ${newBooking.booking_date} o ${newBooking.booking_time}`,
+              duration: 8000,
+            });
+            fetchData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'bookings'
+          },
+          (payload) => {
+            console.log('Booking deleted (student cancelled):', payload);
+            const deletedBooking = payload.old as { booking_date?: string; booking_time?: string };
+            toast.warning("Lekcja anulowana przez ucznia", {
+              description: `Uczeń anulował lekcję na ${deletedBooking.booking_date} o ${deletedBooking.booking_time}`,
+              duration: 8000,
+            });
+            fetchData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'bookings'
+          },
+          () => {
+            fetchData();
           }
         )
         .subscribe();
