@@ -58,6 +58,7 @@ interface Booking {
   subject?: string | null;
   level?: string | null;
   class_number?: number | null;
+  topic?: string | null;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -649,7 +650,7 @@ const AdminPanel = () => {
         </AnimatePresence>
 
         {/* Monthly Statistics */}
-        <MonthlyStats bookings={bookings} pricePerLesson={80} />
+        <MonthlyStats bookings={bookings} />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -833,6 +834,16 @@ const AdminPanel = () => {
                           </span>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Topic/Subject section */}
+                  {selectedBookingDetails.topic && (
+                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20">
+                      <p className="text-xs text-muted-foreground mb-2">📚 Temat / Dział do nauki</p>
+                      <p className="text-sm font-medium text-foreground whitespace-pre-wrap">
+                        {selectedBookingDetails.topic}
+                      </p>
                     </div>
                   )}
 
@@ -1081,6 +1092,11 @@ const AdminPanel = () => {
                                   {booking.subject && ` • ${booking.subject === "chemia" ? "Ch" : "Fiz"}`}
                                   {booking.level && ` • ${booking.level === "podstawowy" ? "P" : "R"}`}
                                   {booking.class_number && ` • kl.${booking.class_number}`}
+                                </span>
+                              )}
+                              {booking.topic && (
+                                <span className="text-xs px-2 py-0.5 bg-secondary/10 rounded-full text-secondary max-w-[200px] truncate" title={booking.topic}>
+                                  📚 {booking.topic}
                                 </span>
                               )}
                             </div>

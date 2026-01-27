@@ -24,6 +24,7 @@ interface Booking {
   created_at: string;
   user_id: string;
   is_paid: boolean;
+  school_type?: string;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -32,10 +33,18 @@ interface Booking {
 
 interface MonthlyStatsProps {
   bookings: Booking[];
-  pricePerLesson?: number;
 }
 
-const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
+// Pricing based on school type
+const getPriceForBooking = (booking: Booking): number => {
+  if (booking.school_type === "podstawowa") {
+    return 100;
+  }
+  // liceum or technikum = 120
+  return 120;
+};
+
+const MonthlyStats = ({ bookings }: MonthlyStatsProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const stats = useMemo(() => {
@@ -76,9 +85,15 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
     const currentMonthLessons = currentMonthPaidBookings.length;
     const lastMonthLessons = lastMonthPaidBookings.length;
 
-    // Earnings (only from paid lessons)
-    const currentMonthEarnings = currentMonthLessons * pricePerLesson;
-    const lastMonthEarnings = lastMonthLessons * pricePerLesson;
+    // Earnings (based on school type - podstawowa = 100, liceum/technikum = 120)
+    const currentMonthEarnings = currentMonthPaidBookings.reduce(
+      (sum, booking) => sum + getPriceForBooking(booking), 
+      0
+    );
+    const lastMonthEarnings = lastMonthPaidBookings.reduce(
+      (sum, booking) => sum + getPriceForBooking(booking), 
+      0
+    );
 
     // Calculate percentage changes
     const studentChange = lastMonthStudents > 0 
@@ -108,7 +123,7 @@ const MonthlyStats = ({ bookings, pricePerLesson = 80 }: MonthlyStatsProps) => {
       earningsChange,
       isCurrentMonth,
     };
-  }, [bookings, pricePerLesson, selectedMonth]);
+  }, [bookings, selectedMonth]);
 
   const goToPreviousMonth = () => setSelectedMonth(prev => subMonths(prev, 1));
   const goToNextMonth = () => setSelectedMonth(prev => addMonths(prev, 1));

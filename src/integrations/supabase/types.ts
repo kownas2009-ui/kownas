@@ -78,6 +78,7 @@ export type Database = {
           school_type: string | null
           status: string
           subject: string | null
+          topic: string | null
           user_id: string
         }
         Insert: {
@@ -92,6 +93,7 @@ export type Database = {
           school_type?: string | null
           status?: string
           subject?: string | null
+          topic?: string | null
           user_id: string
         }
         Update: {
@@ -106,6 +108,7 @@ export type Database = {
           school_type?: string | null
           status?: string
           subject?: string | null
+          topic?: string | null
           user_id?: string
         }
         Relationships: [

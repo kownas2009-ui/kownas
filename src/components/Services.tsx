@@ -3,8 +3,18 @@ import { Button } from "@/components/ui/button";
 import BookingDialog from "./BookingDialog";
 import { Check, Beaker, FlaskConical, Sparkles } from "lucide-react";
 
+type ServicePreset = "podstawowa" | "liceum-technikum";
+
 const Services = () => {
-  const services = [
+  const services: {
+    icon: typeof Beaker;
+    title: string;
+    subtitle: string;
+    price: string;
+    features: string[];
+    popular: boolean;
+    preset: ServicePreset;
+  }[] = [
     {
       icon: Beaker,
       title: "Szkoła podstawowa",
@@ -17,6 +27,7 @@ const Services = () => {
         "Przygotowanie do konkursów",
       ],
       popular: false,
+      preset: "podstawowa",
     },
     {
       icon: FlaskConical,
@@ -27,9 +38,10 @@ const Services = () => {
         "Chemia na poziomie rozszerzonym",
         "Przygotowanie do matury",
         "Rozwiązywanie zadań maturalnych",
-        "Konsultacje przed egzaminem",
+        "Przygotowanie do sprawdzianów",
       ],
       popular: true,
+      preset: "liceum-technikum",
     },
   ];
 
@@ -215,7 +227,7 @@ const Services = () => {
                 ))}
               </ul>
 
-              <BookingDialog lessonType={service.title}>
+              <BookingDialog lessonType={service.title} preset={service.preset}>
                 <motion.div
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
