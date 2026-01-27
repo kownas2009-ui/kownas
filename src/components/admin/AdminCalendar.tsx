@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { pl } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Clock, User, FlaskConical } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, User, FlaskConical, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -39,10 +39,12 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Get bookings for a specific date
+  // Get bookings for a specific date - show only pending and confirmed
   const getBookingsForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return bookings.filter(b => b.booking_date === dateStr);
+    return bookings
+      .filter(b => b.booking_date === dateStr && (b.status === "pending" || b.status === "confirmed"))
+      .sort((a, b) => a.booking_time.localeCompare(b.booking_time));
   };
 
   // Day cell component with animations
@@ -113,14 +115,20 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Calendar Header */}
+      {/* Calendar Header with cosmic styling */}
       <div className="flex items-center justify-between">
         <motion.h3 
-          className="text-2xl font-display font-bold text-foreground"
+          className="text-2xl font-display font-bold text-foreground flex items-center gap-3"
           key={format(currentMonth, "MMMM yyyy")}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles className="w-6 h-6 text-secondary" />
+          </motion.div>
           {format(currentMonth, "LLLL yyyy", { locale: pl })}
         </motion.h3>
         <div className="flex gap-2">
@@ -129,6 +137,7 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
               variant="outline"
               size="icon"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="cosmic-card"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -138,6 +147,7 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
               variant="outline"
               size="icon"
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="cosmic-card"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -145,22 +155,31 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border">
+      {/* Calendar Grid with cosmic styling */}
+      <div className="cosmic-card rounded-2xl p-4 border border-border relative overflow-hidden">
+        {/* Subtle background effect */}
+        <div className="absolute inset-0 plasma-effect opacity-30 pointer-events-none" />
+        
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-2 mb-2 relative z-10">
           {["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nd"].map((day, i) => (
-            <div key={day} className={cn(
-              "text-center text-sm font-medium py-2",
-              i >= 5 ? "text-secondary" : "text-muted-foreground"
-            )}>
+            <motion.div 
+              key={day} 
+              className={cn(
+                "text-center text-sm font-medium py-2",
+                i >= 5 ? "text-secondary" : "text-muted-foreground"
+              )}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
               {day}
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Days grid */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-2 relative z-10">
           {/* Empty cells for days before month start */}
           {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
             <div key={`empty-${i}`} className="min-h-[80px]" />
@@ -172,16 +191,25 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
         </div>
       </div>
 
-      {/* Selected date details */}
+      {/* Selected date details with cosmic styling */}
       <AnimatePresence mode="wait">
         {selectedDate && (
           <motion.div
             initial={{ opacity: 0, y: 20, height: 0 }}
             animate={{ opacity: 1, y: 0, height: "auto" }}
             exit={{ opacity: 0, y: -20, height: 0 }}
-            className="bg-card rounded-2xl border border-border p-6 overflow-hidden"
+            className="cosmic-card rounded-2xl border border-border p-6 overflow-hidden relative"
           >
-            <h4 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
+            {/* Cosmic glow effect */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+            
+            <h4 className="font-display font-bold text-lg mb-4 flex items-center gap-2 relative z-10">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Zap className="w-5 h-5 text-secondary" />
+              </motion.div>
               <Clock className="w-5 h-5 text-primary" />
               {format(selectedDate, "d MMMM yyyy", { locale: pl })}
             </h4>

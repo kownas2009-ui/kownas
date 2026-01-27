@@ -19,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const now = new Date();
     
-    // 7 days ago for completed bookings (confirmed/pending)
+    // 7 days ago for completed bookings (confirmed/pending) - after lesson is done
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
     
@@ -27,10 +27,11 @@ const handler = async (req: Request): Promise<Response> => {
     const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
     const tenDaysAgoStr = tenDaysAgo.toISOString().split('T')[0];
 
-    console.log(`Cleaning up completed bookings older than ${sevenDaysAgoStr}`);
-    console.log(`Cleaning up cancelled bookings older than ${tenDaysAgoStr}`);
+    console.log(`Current date: ${now.toISOString()}`);
+    console.log(`Cleaning up completed/pending bookings with date older than ${sevenDaysAgoStr}`);
+    console.log(`Cleaning up cancelled bookings with date older than ${tenDaysAgoStr}`);
 
-    // Delete old confirmed/pending bookings (completed lessons older than 7 days)
+    // Delete old confirmed/pending bookings (lessons that happened more than 7 days ago)
     const { data: deletedCompleted, error: completedError } = await supabase
       .from("bookings")
       .delete()
@@ -58,15 +59,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     const totalDeleted = (deletedCompleted?.length || 0) + (deletedCancelled?.length || 0);
 
-    console.log(`Deleted ${totalDeleted} old bookings (${deletedCompleted?.length || 0} completed after 7 days, ${deletedCancelled?.length || 0} cancelled after 10 days)`);
+    console.log(`Cleanup complete!`);
+    console.log(`Deleted ${deletedCompleted?.length || 0} completed/pending bookings (older than 7 days)`);
+    console.log(`Deleted ${deletedCancelled?.length || 0} cancelled bookings (older than 10 days)`);
+    console.log(`Total deleted: ${totalDeleted}`);
+
+    if (deletedCompleted && deletedCompleted.length > 0) {
+      console.log("Deleted completed bookings:", deletedCompleted.map(b => ({
+        id: b.id,
+        date: b.booking_date,
+        status: b.status
+      })));
+    }
 
     return new Response(
       JSON.stringify({
-        message: `Cleanup complete`,
+        success: true,
+        message: `Cleanup complete - deleted ${totalDeleted} old bookings`,
         deleted: {
           completed: deletedCompleted?.length || 0,
           cancelled: deletedCancelled?.length || 0,
           total: totalDeleted
+        },
+        thresholds: {
+          completedBeforeDate: sevenDaysAgoStr,
+          cancelledBeforeDate: tenDaysAgoStr
         }
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
