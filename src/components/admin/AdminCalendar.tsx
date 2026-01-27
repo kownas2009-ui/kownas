@@ -19,6 +19,7 @@ interface Booking {
   subject?: string | null;
   level?: string | null;
   class_number?: number | null;
+  topic?: string | null;
   profiles?: {
     full_name: string;
     phone: string | null;
@@ -91,7 +92,7 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
                   booking.status === "pending" && "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
                   booking.status === "cancelled" && "bg-red-500/20 text-red-700 dark:text-red-400 line-through"
                 )}
-                title={`${booking.school_type || ''} ${booking.subject || ''} ${booking.level || ''} kl.${booking.class_number || ''}`}
+                title={`${booking.school_type || ''} ${booking.subject || ''} ${booking.level || ''} kl.${booking.class_number || ''}${booking.topic ? ' | ' + booking.topic : ''}`}
               >
                 {booking.booking_time} - {booking.profiles?.full_name?.split(" ")[0] || "Uczeń"}
               </motion.div>
@@ -228,6 +229,11 @@ const AdminCalendar = ({ bookings, onSelectBooking }: AdminCalendarProps) => {
                               {booking.subject === "chemia" ? "Chemia" : booking.subject === "fizyka" ? "Fizyka" : "Chemia"}
                               {booking.level && ` • ${booking.level === "podstawowy" ? "Podst." : "Rozsz."}`}
                               {booking.class_number && ` • Kl. ${booking.class_number}`}
+                            </p>
+                          )}
+                          {booking.topic && (
+                            <p className="text-xs text-secondary mt-1 truncate max-w-[200px]" title={booking.topic}>
+                              📚 {booking.topic}
                             </p>
                           )}
                         </div>

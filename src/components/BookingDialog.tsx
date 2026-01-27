@@ -21,15 +21,19 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCelebration from "./BookingCelebration";
 
+type ServicePreset = "podstawowa" | "liceum-technikum";
+
 interface BookingDialogProps {
   children: React.ReactNode;
   lessonType?: string;
   onSuccess?: () => void;
+  preset?: ServicePreset;
 }
 
 const timeSlots = [
@@ -40,17 +44,27 @@ type SchoolType = "podstawowa" | "liceum" | "technikum";
 type Subject = "chemia" | "fizyka";
 type Level = "podstawowy" | "rozszerzony";
 
-const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDialogProps) => {
+const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: BookingDialogProps) => {
   const { user } = useAuth();
   
+  // Determine initial step based on preset
+  const getInitialStep = (): "school" | "details" | "schedule" => {
+    if (preset === "podstawowa") return "details";
+    if (preset === "liceum-technikum") return "school"; // Need to pick liceum vs technikum
+    return "school";
+  };
+
   // Step management
-  const [step, setStep] = useState<"school" | "details" | "schedule">("school");
+  const [step, setStep] = useState<"school" | "details" | "schedule">(getInitialStep());
   
-  // School selection
-  const [schoolType, setSchoolType] = useState<SchoolType | null>(null);
+  // School selection - pre-select if preset provided
+  const [schoolType, setSchoolType] = useState<SchoolType | null>(
+    preset === "podstawowa" ? "podstawowa" : null
+  );
   const [subject, setSubject] = useState<Subject | null>(null);
   const [level, setLevel] = useState<Level | null>(null);
   const [classNumber, setClassNumber] = useState<number | null>(null);
+  const [topic, setTopic] = useState<string>("");
   
   // Schedule
   const [date, setDate] = useState<Date>();
@@ -209,6 +223,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
           subject: schoolType === "podstawowa" ? subject : "chemia",
           level: schoolType === "liceum" ? level : null,
           class_number: classNumber,
+          topic: topic.trim() || null,
         });
 
         if (error) throw error;
@@ -237,11 +252,12 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
     if (!open) {
       setTimeout(() => {
         setIsSubmitted(false);
-        setStep("school");
-        setSchoolType(null);
+        setStep(getInitialStep());
+        setSchoolType(preset === "podstawowa" ? "podstawowa" : null);
         setSubject(null);
         setLevel(null);
         setClassNumber(null);
+        setTopic("");
         setDate(undefined);
         setSelectedTime(undefined);
         setName("");
@@ -329,53 +345,62 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
             {step === "school" && (
               <div className="space-y-4">
                 <div className="grid gap-3">
-                  <button
-                    onClick={() => handleSchoolSelect("podstawowa")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <BookOpen className="w-6 h-6 text-primary" />
+                  {/* Primary school option - only show if not coming from liceum-technikum preset */}
+                  {preset !== "liceum-technikum" && (
+                    <button
+                      onClick={() => handleSchoolSelect("podstawowa")}
+                      className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <BookOpen className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">Szkoła Podstawowa</p>
+                          <p className="text-sm text-muted-foreground">Klasa 7-8 • Chemia lub Fizyka</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-foreground">Szkoła Podstawowa</p>
-                        <p className="text-sm text-muted-foreground">Klasa 7-8 • Chemia lub Fizyka</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </button>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => handleSchoolSelect("liceum")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                        <GraduationCap className="w-6 h-6 text-secondary" />
+                  {/* High school option - only show if not coming from podstawowa preset */}
+                  {preset !== "podstawowa" && (
+                    <button
+                      onClick={() => handleSchoolSelect("liceum")}
+                      className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                          <GraduationCap className="w-6 h-6 text-secondary" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">Liceum</p>
+                          <p className="text-sm text-muted-foreground">Klasa 1-4 • Chemia podstawa/rozszerzenie</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-foreground">Liceum</p>
-                        <p className="text-sm text-muted-foreground">Klasa 1-4 • Chemia podstawa/rozszerzenie</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </button>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => handleSchoolSelect("technikum")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-accent/50 flex items-center justify-center group-hover:bg-accent transition-colors">
-                        <FlaskConical className="w-6 h-6 text-foreground" />
+                  {/* Technikum option - only show if not coming from podstawowa preset */}
+                  {preset !== "podstawowa" && (
+                    <button
+                      onClick={() => handleSchoolSelect("technikum")}
+                      className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-accent/50 flex items-center justify-center group-hover:bg-accent transition-colors">
+                          <FlaskConical className="w-6 h-6 text-foreground" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">Technikum</p>
+                          <p className="text-sm text-muted-foreground">Klasa 1-5 • Chemia</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-foreground">Technikum</p>
-                        <p className="text-sm text-muted-foreground">Klasa 1-5 • Chemia</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </button>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -383,16 +408,24 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
             {/* Step 2: Details based on school type */}
             {step === "details" && schoolType && (
               <div className="space-y-6 animate-fade-in-up">
-                {/* Back button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setStep("school")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ← Zmień typ szkoły
-                </Button>
-
+                {/* Back button - only show if not pre-selected */}
+                {(!preset || preset === "liceum-technikum") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (preset === "liceum-technikum") {
+                        setStep("school");
+                      } else {
+                        setStep("school");
+                        setSchoolType(null);
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    ← Zmień typ szkoły
+                  </Button>
+                )}
                 {/* School type badge */}
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10">
                   {schoolType === "podstawowa" && <BookOpen className="w-5 h-5 text-primary" />}
@@ -620,6 +653,25 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess }: BookingDi
                         Szare terminy są już zajęte
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* Topic/Section field - always show after time selection */}
+                {selectedTime && (
+                  <div className="animate-fade-in-up">
+                    <label className="block text-sm font-medium text-foreground mb-2 font-body">
+                      Temat lub dział do nauki (opcjonalnie)
+                    </label>
+                    <Textarea
+                      placeholder="Np. stechiometria, elektrochemia, równania jonowe..."
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      className="bg-card resize-none"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Opisz z czym potrzebujesz pomocy
+                    </p>
                   </div>
                 )}
 
