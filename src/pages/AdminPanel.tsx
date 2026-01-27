@@ -39,6 +39,7 @@ import AdminCalendar from "@/components/admin/AdminCalendar";
 import StudentPDFGenerator from "@/components/admin/StudentPDFGenerator";
 import MonthlyStats from "@/components/admin/MonthlyStats";
 import { FloatingFormulas, DNAHelixAdmin, BubblingFlask } from "@/components/admin/AdvancedAnimations";
+import { CosmicStarField, CosmicOrbs, AuroraEffect, CosmicChemistryParticles } from "@/components/admin/CosmicBackground";
 import SendNoteDialog from "@/components/admin/SendNoteDialog";
 import UserManagement from "@/components/admin/UserManagement";
 import MessagesTab from "@/components/admin/MessagesTab";
@@ -578,17 +579,33 @@ const AdminPanel = () => {
     );
   }
 
+  // Filter bookings by status but always show pending+confirmed for calendar
   const filteredBookings = bookings.filter(b => {
-    if (filter === "all") return true;
+    if (filter === "all") return b.status !== "cancelled";
     return b.status === filter;
   });
 
-  const upcomingBookings = filteredBookings.filter(
-    b => new Date(b.booking_date) >= new Date()
-  );
+  // For calendar - show all pending and confirmed regardless of filter
+  const calendarBookings = bookings.filter(b => b.status === "pending" || b.status === "confirmed");
+
+  // Upcoming bookings sorted from soonest to latest
+  const upcomingBookings = filteredBookings
+    .filter(b => new Date(b.booking_date) >= new Date())
+    .sort((a, b) => {
+      const dateA = new Date(`${a.booking_date}T${a.booking_time}`);
+      const dateB = new Date(`${b.booking_date}T${b.booking_time}`);
+      return dateA.getTime() - dateB.getTime();
+    });
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Cosmic background layers */}
+      <CosmicStarField />
+      <AuroraEffect />
+      <CosmicOrbs />
+      <CosmicChemistryParticles />
+      
+      {/* Chemistry animations */}
       <FloatingMolecules />
       <FloatingFormulas />
       <DNAHelixAdmin />
@@ -1034,7 +1051,7 @@ const AdminPanel = () => {
               exit={{ opacity: 0, x: -20 }}
             >
               <AdminCalendar 
-                bookings={filteredBookings} 
+                bookings={calendarBookings} 
                 onSelectBooking={(booking) => setSelectedBookingDetails(booking)}
               />
             </motion.div>
