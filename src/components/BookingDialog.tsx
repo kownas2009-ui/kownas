@@ -84,7 +84,7 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: B
   const [blockedDays, setBlockedDays] = useState<string[]>([]);
   const [blockedTimeSlots, setBlockedTimeSlots] = useState<Record<string, string[]>>({});
 
-  // Fetch blocked days and time slots on mount
+  // Fetch blocked days and time slots on mount + set up real-time subscription
   useEffect(() => {
     const fetchBlockedData = async () => {
       try {
@@ -115,7 +115,30 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: B
       }
     };
     fetchBlockedData();
-  }, []);
+
+    // Real-time subscription for bookings changes - refresh slots when bookings change
+    const bookingsChannel = supabase
+      .channel('booking-dialog-slots')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings'
+        },
+        () => {
+          // Refresh slots when any booking changes (including cancellations)
+          if (date) {
+            fetchBookedSlots(date);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingsChannel);
+    };
+  }, [date]);
 
   // Get available classes based on school type
   const getAvailableClasses = (): number[] => {
