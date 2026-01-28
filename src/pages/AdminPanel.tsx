@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -381,7 +382,7 @@ const AdminPanel = () => {
     thisWeekBookings: 0
   });
   const [loadingData, setLoadingData] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "confirmed">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
   const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users" | "messages" | "notes">("list");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
@@ -785,21 +786,30 @@ const AdminPanel = () => {
             <StudentPDFGenerator bookings={bookings} />
             
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {[
                 { id: "all", label: "Wszystkie", icon: Calendar },
                 { id: "pending", label: "Oczekujące", icon: Clock },
-                { id: "confirmed", label: "Potwierdzone", icon: CheckCircle }
+                { id: "confirmed", label: "Potwierdzone", icon: CheckCircle },
+                { id: "cancelled", label: "Anulowane", icon: X }
               ].map((f) => (
                 <motion.div key={f.id} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     variant={filter === f.id ? "hero" : "outline"}
                     size="sm"
                     onClick={() => setFilter(f.id as typeof filter)}
-                    className="gap-2"
+                    className={cn(
+                      "gap-2",
+                      f.id === "cancelled" && filter === "cancelled" && "bg-destructive hover:bg-destructive/90"
+                    )}
                   >
                     <f.icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{f.label}</span>
+                    {f.id === "cancelled" && thisWeekCancelled.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-destructive/20 text-destructive">
+                        {thisWeekCancelled.length}
+                      </span>
+                    )}
                   </Button>
                 </motion.div>
               ))}

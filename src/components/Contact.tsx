@@ -50,6 +50,9 @@ const Contact = () => {
           sender_email: email.trim(),
           sender_phone: phone.trim() || null,
           message: message.trim(),
+          is_read: false,
+          admin_reply: null,
+          replied_at: null,
         });
 
       if (error) throw error;
