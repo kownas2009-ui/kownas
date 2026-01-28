@@ -579,23 +579,38 @@ const AdminPanel = () => {
     );
   }
 
-  // Filter bookings by status but always show pending+confirmed for calendar
+  // Filter bookings by status - show all including cancelled when filter is "all" or "cancelled"
   const filteredBookings = bookings.filter(b => {
-    if (filter === "all") return b.status !== "cancelled";
+    if (filter === "all") return true; // Show all bookings including cancelled
+    if (filter === "cancelled") return b.status === "cancelled";
     return b.status === filter;
   });
 
-  // For calendar - show all pending and confirmed regardless of filter
+  // For calendar - show only pending and confirmed (not cancelled)
   const calendarBookings = bookings.filter(b => b.status === "pending" || b.status === "confirmed");
 
-  // Upcoming bookings sorted from soonest to latest
-  const upcomingBookings = filteredBookings
-    .filter(b => new Date(b.booking_date) >= new Date())
+  // Upcoming bookings - only show active (pending/confirmed), sorted from soonest to latest
+  const upcomingBookings = bookings
+    .filter(b => {
+      const bookingDate = new Date(b.booking_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return bookingDate >= today && (b.status === "pending" || b.status === "confirmed");
+    })
     .sort((a, b) => {
       const dateA = new Date(`${a.booking_date}T${a.booking_time}`);
       const dateB = new Date(`${b.booking_date}T${b.booking_time}`);
       return dateA.getTime() - dateB.getTime();
     });
+
+  // Cancelled bookings this week (for visibility in admin panel)
+  const thisWeekCancelled = bookings.filter(b => {
+    const bookingDate = new Date(b.booking_date);
+    const today = new Date();
+    const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    today.setHours(0, 0, 0, 0);
+    return b.status === "cancelled" && bookingDate >= today && bookingDate <= weekLater;
+  });
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
