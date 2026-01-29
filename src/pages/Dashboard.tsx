@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { format, differenceInDays, differenceInHours } from "date-fns";
+import { format, differenceInDays, differenceInHours, differenceInMinutes, isToday, isTomorrow, startOfDay } from "date-fns";
 import { pl } from "date-fns/locale";
 import { 
   LogOut, 
@@ -293,19 +293,22 @@ const Dashboard = () => {
   // - Upcoming: future bookings that are not cancelled
   // - Past: completed bookings (max 7 days old), cancelled bookings (max 10 days old)
   const now = new Date();
+  const today = startOfDay(now);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
   
-  const upcomingBookings = bookings.filter(
-    (b) => new Date(b.booking_date) >= now && b.status !== 'cancelled'
-  );
+  // Only show upcoming bookings that are pending or confirmed (NOT cancelled)
+  const upcomingBookings = bookings.filter((b) => {
+    const bookingDate = startOfDay(new Date(b.booking_date));
+    return bookingDate >= today && b.status !== 'cancelled';
+  });
   
   // Past bookings filtering:
   // - Completed (confirmed/pending): show up to 7 days after lesson
   // - Cancelled: show up to 10 days after lesson date (for tracking late cancellation fees)
   const pastBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_date);
-    const isInPast = bookingDate < now;
+    const isInPast = bookingDate < today;
     
     if (!isInPast) return false;
     
@@ -318,10 +321,47 @@ const Dashboard = () => {
     return bookingDate >= sevenDaysAgo;
   });
 
+  // Get next upcoming lesson (first one that is pending or confirmed)
   const nextLesson = upcomingBookings[0];
-  const daysUntilNext = nextLesson 
-    ? differenceInDays(new Date(nextLesson.booking_date), new Date()) 
-    : null;
+  
+  // Calculate precise time until next lesson
+  const getTimeUntilNextLesson = () => {
+    if (!nextLesson) return null;
+    
+    const lessonDate = new Date(nextLesson.booking_date);
+    const [hours, minutes] = nextLesson.booking_time.split(':').map(Number);
+    lessonDate.setHours(hours, minutes, 0, 0);
+    
+    const nowTime = new Date();
+    
+    // Check if the lesson is today
+    if (isToday(new Date(nextLesson.booking_date))) {
+      const minutesUntil = differenceInMinutes(lessonDate, nowTime);
+      if (minutesUntil <= 0) {
+        return "Teraz!";
+      } else if (minutesUntil < 60) {
+        return `Za ${minutesUntil} min`;
+      } else {
+        const hoursUntil = Math.floor(minutesUntil / 60);
+        const remainingMinutes = minutesUntil % 60;
+        if (remainingMinutes > 0) {
+          return `Za ${hoursUntil}h ${remainingMinutes}min`;
+        }
+        return `Za ${hoursUntil}h`;
+      }
+    }
+    
+    // Check if the lesson is tomorrow
+    if (isTomorrow(new Date(nextLesson.booking_date))) {
+      return `Jutro o ${nextLesson.booking_time}`;
+    }
+    
+    // For future dates, show days
+    const daysUntil = differenceInDays(startOfDay(new Date(nextLesson.booking_date)), today);
+    return `Za ${daysUntil} dni`;
+  };
+  
+  const timeUntilNext = getTimeUntilNextLesson();
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -443,8 +483,8 @@ const Dashboard = () => {
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-3">
                   <Timer className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                <p className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                  {daysUntilNext !== null ? (daysUntilNext === 0 ? "Dziś!" : `${daysUntilNext} dni`) : "-"}
+                <p className="text-xl md:text-2xl font-display font-bold text-foreground">
+                  {timeUntilNext || "-"}
                 </p>
                 <p className="text-xs md:text-sm text-muted-foreground">Do następnej</p>
               </motion.div>
