@@ -289,8 +289,15 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: B
     }
   };
 
-  const isBlocked = (date: Date) => blockedDays.includes(format(date, "yyyy-MM-dd"));
-  const isDateDisabled = (date: Date) => date < new Date() || isBlocked(date);
+  const isBlocked = (checkDate: Date) => blockedDays.includes(format(checkDate, "yyyy-MM-dd"));
+  
+  // Allow same-day booking - only disable past days and blocked days
+  const isDateDisabled = (checkDate: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate < today || isBlocked(checkDate);
+  };
 
   // Get summary of selection
   const getSelectionSummary = (): string => {
