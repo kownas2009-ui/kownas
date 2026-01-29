@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,7 @@ import BookingDialog from "@/components/BookingDialog";
 import StudentNotes from "@/components/StudentNotes";
 import StudentMessaging from "@/components/dashboard/StudentMessaging";
 import ThemeToggle from "@/components/ThemeToggle";
+import { FloatingAtom, BubblingBeaker, TestTube, FloatingFormula, BenzeneRing } from "@/components/ChemistryAnimations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,10 +59,31 @@ interface Profile {
   phone: string | null;
 }
 
-// Floating molecules background
+// Enhanced floating molecules background with chemistry animations
 const FloatingMolecules = () => (
   <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-    {[...Array(10)].map((_, i) => (
+    {/* Floating atoms */}
+    <FloatingAtom className="top-20 left-10 opacity-20" delay={0} size={60} />
+    <FloatingAtom className="top-1/3 right-20 opacity-15" delay={1.5} size={50} />
+    <FloatingAtom className="bottom-1/4 left-1/4 opacity-12" delay={3} size={45} />
+    
+    {/* Bubbling beakers */}
+    <BubblingBeaker className="bottom-20 right-10 opacity-15" />
+    <BubblingBeaker className="top-1/2 left-5 opacity-10 scale-75" />
+    
+    {/* Test tubes */}
+    <TestTube className="bottom-1/3 right-1/4 opacity-12" />
+    <TestTube className="top-1/4 left-1/3 opacity-10 scale-90" />
+    
+    {/* Benzene rings */}
+    <BenzeneRing className="top-1/2 right-10 opacity-8 scale-75" />
+    
+    {/* Floating formulas */}
+    <FloatingFormula formula="H₂O" className="top-1/4 left-20 text-5xl" delay={0} />
+    <FloatingFormula formula="NaCl" className="bottom-1/3 right-20 text-4xl" delay={1} />
+    <FloatingFormula formula="CO₂" className="top-2/3 left-1/2 text-3xl" delay={2} />
+    
+    {[...Array(8)].map((_, i) => (
       <motion.div
         key={i}
         className="absolute"
@@ -108,6 +130,34 @@ const FloatingMolecules = () => (
       }}
       transition={{ duration: 8, repeat: Infinity, delay: 2 }}
     />
+    
+    {/* Rising bubbles */}
+    {[...Array(12)].map((_, i) => (
+      <motion.div
+        key={`bubble-${i}`}
+        className="absolute rounded-full"
+        style={{
+          left: `${5 + i * 8}%`,
+          bottom: -20,
+          width: 6 + Math.random() * 10,
+          height: 6 + Math.random() * 10,
+          background: i % 2 === 0 
+            ? "radial-gradient(circle at 30% 30%, hsl(var(--primary) / 0.25), hsl(var(--primary) / 0.08))" 
+            : "radial-gradient(circle at 30% 30%, hsl(var(--secondary) / 0.2), hsl(var(--secondary) / 0.05))",
+        }}
+        animate={{
+          y: [0, -1500],
+          x: [0, Math.sin(i) * 30, 0],
+          opacity: [0, 0.5, 0.3, 0],
+        }}
+        transition={{
+          duration: 15 + Math.random() * 10,
+          repeat: Infinity,
+          delay: i * 1.2,
+          ease: "linear",
+        }}
+      />
+    ))}
   </div>
 );
 
@@ -291,11 +341,10 @@ const Dashboard = () => {
 
   // Filter bookings: 
   // - Upcoming: future bookings that are not cancelled
-  // - Past: completed bookings (max 7 days old), cancelled bookings (max 10 days old)
+  // - Past: completed bookings (max 3 days old), cancelled bookings (max 3 days old)
   const now = new Date();
   const today = startOfDay(now);
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
   
   // Only show upcoming bookings that are pending or confirmed (NOT cancelled)
   const upcomingBookings = bookings.filter((b) => {
@@ -303,29 +352,25 @@ const Dashboard = () => {
     return bookingDate >= today && b.status !== 'cancelled';
   });
   
-  // Past bookings filtering:
-  // - Completed (confirmed/pending): show up to 7 days after lesson
-  // - Cancelled: show up to 10 days after lesson date (for tracking late cancellation fees)
+  // Past bookings filtering - only show up to 3 days old
   const pastBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_date);
     const isInPast = bookingDate < today;
     
     if (!isInPast) return false;
     
-    if (b.status === 'cancelled') {
-      // Cancelled bookings: keep for 10 days
-      return bookingDate >= tenDaysAgo;
-    }
-    
-    // Completed bookings: keep for 7 days
-    return bookingDate >= sevenDaysAgo;
+    // All past bookings: keep for 3 days only
+    return bookingDate >= threeDaysAgo;
   });
 
   // Get next upcoming lesson (first one that is pending or confirmed)
   const nextLesson = upcomingBookings[0];
   
+  // Live countdown state - updates every minute
+  const [timeUntilNext, setTimeUntilNext] = useState<string | null>(null);
+  
   // Calculate precise time until next lesson
-  const getTimeUntilNextLesson = () => {
+  const calculateTimeUntilNextLesson = useCallback(() => {
     if (!nextLesson) return null;
     
     const lessonDate = new Date(nextLesson.booking_date);
@@ -340,28 +385,37 @@ const Dashboard = () => {
       if (minutesUntil <= 0) {
         return "Teraz!";
       } else if (minutesUntil < 60) {
-        return `Za ${minutesUntil} min`;
+        return `${minutesUntil} min`;
       } else {
         const hoursUntil = Math.floor(minutesUntil / 60);
         const remainingMinutes = minutesUntil % 60;
         if (remainingMinutes > 0) {
-          return `Za ${hoursUntil}h ${remainingMinutes}min`;
+          return `${hoursUntil}h ${remainingMinutes}min`;
         }
-        return `Za ${hoursUntil}h`;
+        return `${hoursUntil}h`;
       }
     }
     
     // Check if the lesson is tomorrow
     if (isTomorrow(new Date(nextLesson.booking_date))) {
-      return `Jutro o ${nextLesson.booking_time}`;
+      return `Jutro, ${nextLesson.booking_time}`;
     }
     
     // For future dates, show days
-    const daysUntil = differenceInDays(startOfDay(new Date(nextLesson.booking_date)), today);
-    return `Za ${daysUntil} dni`;
-  };
+    const daysUntil = differenceInDays(startOfDay(new Date(nextLesson.booking_date)), startOfDay(nowTime));
+    return `${daysUntil} dni`;
+  }, [nextLesson]);
   
-  const timeUntilNext = getTimeUntilNextLesson();
+  // Update countdown every minute
+  useEffect(() => {
+    setTimeUntilNext(calculateTimeUntilNextLesson());
+    
+    const intervalId = setInterval(() => {
+      setTimeUntilNext(calculateTimeUntilNextLesson());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(intervalId);
+  }, [calculateTimeUntilNextLesson]);
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -486,7 +540,7 @@ const Dashboard = () => {
                 <p className="text-xl md:text-2xl font-display font-bold text-foreground">
                   {timeUntilNext || "-"}
                 </p>
-                <p className="text-xs md:text-sm text-muted-foreground">Do następnej</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Do następnej lekcji</p>
               </motion.div>
               
               <motion.div 
