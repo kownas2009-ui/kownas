@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { pl } from "date-fns/locale";
 import { CalendarIcon, Clock, CheckCircle, GraduationCap, FlaskConical, BookOpen, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -655,7 +655,18 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: B
                           const isBooked = bookedSlots.includes(time);
                           const dateStr = date ? format(date, "yyyy-MM-dd") : "";
                           const isBlockedTime = blockedTimeSlots[dateStr]?.includes(time) || false;
-                          const isUnavailable = isBooked || isBlockedTime;
+                          
+                          // Check if time slot has passed for today
+                          let isPastTime = false;
+                          if (date && isToday(date)) {
+                            const now = new Date();
+                            const [hours, minutes] = time.split(':').map(Number);
+                            const slotTime = new Date();
+                            slotTime.setHours(hours, minutes, 0, 0);
+                            isPastTime = slotTime <= now;
+                          }
+                          
+                          const isUnavailable = isBooked || isBlockedTime || isPastTime;
                           
                           return (
                             <Button
@@ -665,12 +676,13 @@ const BookingDialog = ({ children, lessonType = "Lekcja", onSuccess, preset }: B
                               onClick={() => !isUnavailable && setSelectedTime(time)}
                               className={cn(
                                 "font-body relative",
-                                isUnavailable && "opacity-50 cursor-not-allowed line-through"
+                                isPastTime && "opacity-40 cursor-not-allowed bg-muted text-muted-foreground",
+                                (isBooked || isBlockedTime) && !isPastTime && "opacity-50 cursor-not-allowed line-through"
                               )}
                               disabled={isUnavailable}
                             >
                               {time}
-                              {isUnavailable && (
+                              {(isBooked || isBlockedTime) && !isPastTime && (
                                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
                               )}
                             </Button>

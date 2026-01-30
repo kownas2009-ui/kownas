@@ -31,9 +31,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send email to Aneta
+    // Send email to Aneta using Resend's default domain
     const emailResponse = await resend.emails.send({
-      from: "Formularz Kontaktowy <noreply@lovableproject.com>",
+      from: "Formularz Kontaktowy <onboarding@resend.dev>",
       to: ["aneta.kownacka79@gmail.com"],
       reply_to: email,
       subject: `Nowa wiadomość od ${name}`,
@@ -72,6 +72,12 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
       `,
     });
+
+    // Check for Resend errors
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      throw new Error(emailResponse.error.message);
+    }
 
     console.log("Email sent successfully:", emailResponse);
 
