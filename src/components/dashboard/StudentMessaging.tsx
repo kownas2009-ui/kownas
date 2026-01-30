@@ -70,11 +70,13 @@ const StudentMessaging = () => {
             if (payload.eventType === 'INSERT') {
               const newMsg = payload.new as ContactMessage;
               setMessages(prev => [newMsg, ...prev]);
-              // Play sound if admin sent a new message (admin_reply exists)
+              // Only play sound if admin sent a new message (admin_reply exists)
+              // and it's not the student's own message
               if (newMsg.admin_reply) {
                 playNotificationSound();
-                toast.info("Nowa wiadomość od Anety!");
+                toast.info("Nowa odpowiedź od Anety!");
               }
+              // Don't show notification for own messages
             } else if (payload.eventType === 'UPDATE') {
               const updatedMsg = payload.new as ContactMessage;
               const oldMsg = payload.old as Partial<ContactMessage>;
@@ -83,11 +85,12 @@ const StudentMessaging = () => {
                 m.id === updatedMsg.id ? updatedMsg : m
               ));
               
-              // Play sound if admin_reply was added or updated
-              if (updatedMsg.admin_reply !== oldMsg.admin_reply) {
+              // Only play sound if admin_reply was added or changed (not when student reads or updates)
+              if (updatedMsg.admin_reply && updatedMsg.admin_reply !== oldMsg.admin_reply) {
                 playNotificationSound();
                 toast.info("Nowa odpowiedź od Anety!");
               }
+              // Don't notify when student marks message as read or when student updates message
             } else if (payload.eventType === 'DELETE') {
               const deletedId = (payload.old as ContactMessage).id;
               setMessages(prev => prev.filter(m => m.id !== deletedId));
