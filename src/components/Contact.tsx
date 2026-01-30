@@ -43,17 +43,15 @@ const Contact = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from("contact_messages")
-        .insert({
-          sender_name: name.trim(),
-          sender_email: email.trim(),
-          sender_phone: phone.trim() || null,
+      // Send email via edge function instead of saving to database
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || null,
           message: message.trim(),
-          is_read: false,
-          admin_reply: null,
-          replied_at: null,
-        });
+        },
+      });
 
       if (error) throw error;
 

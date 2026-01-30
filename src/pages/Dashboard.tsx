@@ -340,30 +340,51 @@ const Dashboard = () => {
   }
 
   // Filter bookings: 
-  // - Upcoming: future bookings that are not cancelled
+  // - Upcoming: FUTURE bookings that are not cancelled (lesson must not have ended + 1h)
+  // - Completed: bookings that ended over 1 hour ago (move from upcoming to completed)
   // - Past: completed bookings (max 3 days old), cancelled bookings (max 3 days old)
   const now = new Date();
   const today = startOfDay(now);
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
   
-  // Only show upcoming bookings that are pending or confirmed (NOT cancelled)
+  // Helper function to check if a lesson has ended (lesson time + 1 hour has passed)
+  const hasLessonEnded = (booking: Booking) => {
+    const lessonDate = new Date(booking.booking_date);
+    const [hours, minutes] = booking.booking_time.split(':').map(Number);
+    lessonDate.setHours(hours, minutes, 0, 0);
+    // Lesson ends 1 hour after start time (assuming 1h lessons)
+    const lessonEndTime = new Date(lessonDate.getTime() + 60 * 60 * 1000);
+    // Add 1 more hour grace period before moving to completed
+    const moveToCompletedTime = new Date(lessonEndTime.getTime() + 60 * 60 * 1000);
+    return now >= moveToCompletedTime;
+  };
+  
+  // Only show upcoming bookings that are:
+  // - pending or confirmed (NOT cancelled)
+  // - AND lesson has NOT ended yet (or ended less than 1 hour ago)
   const upcomingBookings = bookings.filter((b) => {
-    const bookingDate = startOfDay(new Date(b.booking_date));
-    return bookingDate >= today && b.status !== 'cancelled';
+    if (b.status === 'cancelled') return false;
+    // Only include if lesson hasn't ended + 1h grace period
+    return !hasLessonEnded(b);
+  }).sort((a, b) => {
+    // Sort by date and time to get next lesson first
+    const dateA = new Date(`${a.booking_date}T${a.booking_time}`);
+    const dateB = new Date(`${b.booking_date}T${b.booking_time}`);
+    return dateA.getTime() - dateB.getTime();
   });
   
-  // Past bookings filtering - only show up to 3 days old
-  const pastBookings = bookings.filter((b) => {
+  // Completed bookings: lessons that ended over 1 hour ago, up to 3 days old
+  const completedBookings = bookings.filter((b) => {
+    if (b.status === 'cancelled') return false;
+    if (!hasLessonEnded(b)) return false;
     const bookingDate = new Date(b.booking_date);
-    const isInPast = bookingDate < today;
-    
-    if (!isInPast) return false;
-    
-    // All past bookings: keep for 3 days only
     return bookingDate >= threeDaysAgo;
   });
+  
+  // Past bookings now includes completed lessons
+  const pastBookings = completedBookings;
 
-  // Get next upcoming lesson (first one that is pending or confirmed)
+  // Get next upcoming lesson (first one that is pending or confirmed AND hasn't ended)
   const nextLesson = upcomingBookings[0];
   
   // Live countdown state - updates every minute
@@ -378,13 +399,16 @@ const Dashboard = () => {
     lessonDate.setHours(hours, minutes, 0, 0);
     
     const nowTime = new Date();
+    const minutesUntil = differenceInMinutes(lessonDate, nowTime);
+    
+    // If lesson already started or is in past, don't show it
+    if (minutesUntil <= 0) {
+      return "Teraz!";
+    }
     
     // Check if the lesson is today
     if (isToday(new Date(nextLesson.booking_date))) {
-      const minutesUntil = differenceInMinutes(lessonDate, nowTime);
-      if (minutesUntil <= 0) {
-        return "Teraz!";
-      } else if (minutesUntil < 60) {
+      if (minutesUntil < 60) {
         return `${minutesUntil} min`;
       } else {
         const hoursUntil = Math.floor(minutesUntil / 60);
@@ -412,6 +436,7 @@ const Dashboard = () => {
     
     const intervalId = setInterval(() => {
       setTimeUntilNext(calculateTimeUntilNextLesson());
+      // Also trigger a re-render to update bookings lists
     }, 60000); // Update every minute
     
     return () => clearInterval(intervalId);
