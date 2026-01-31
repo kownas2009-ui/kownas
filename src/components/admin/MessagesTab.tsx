@@ -50,6 +50,7 @@ interface ContactMessage {
   admin_reply: string | null;
   replied_at: string | null;
   created_at: string;
+  last_sender_type?: string;
 }
 
 interface StudentProfile {
@@ -95,15 +96,14 @@ const MessagesTab = () => {
           
           if (payload.eventType === 'INSERT') {
             const newMsg = payload.new as ContactMessage;
-            // Only play sound if it's a new message FROM student (has student message content, no admin_reply)
-            // If admin_reply exists and message is empty, it's admin initiating - don't notify
-            if (newMsg.message && newMsg.message.trim() && !newMsg.admin_reply) {
+            // Only play sound if it's a new message FROM student (last_sender_type is 'student')
+            // Admin-initiated messages have last_sender_type = 'admin'
+            if (newMsg.last_sender_type === 'student' && newMsg.message && newMsg.message.trim()) {
               setMessages(prev => [newMsg, ...prev]);
               playNotificationSound();
               toast.info(`Nowa wiadomość od ${newMsg.sender_name}!`);
-            } else if (newMsg.admin_reply && (!newMsg.message || !newMsg.message.trim())) {
-              // Admin sent a new message - just add to list silently (already handled by local state update)
-              // Don't add again if we just sent it
+            } else {
+              // Admin sent a new message - just add to list silently
               setMessages(prev => {
                 if (prev.some(m => m.id === newMsg.id)) return prev;
                 return [newMsg, ...prev];
@@ -122,8 +122,11 @@ const MessagesTab = () => {
               prev?.id === updatedMsg.id ? updatedMsg : prev
             );
             
-            // Play sound only if student added a new message (message field changed and has content)
-            if (updatedMsg.message !== oldMsg.message && updatedMsg.message && updatedMsg.message.trim()) {
+            // Play sound only if student sent the message (last_sender_type changed to 'student')
+            // and the message content actually changed
+            if (updatedMsg.last_sender_type === 'student' && 
+                updatedMsg.message !== oldMsg.message && 
+                updatedMsg.message && updatedMsg.message.trim()) {
               playNotificationSound();
               toast.info(`Nowa wiadomość od ${updatedMsg.sender_name}!`);
             }
@@ -224,7 +227,8 @@ const MessagesTab = () => {
           is_read: true,
           admin_reply: adminMessage,
           replied_at: timestamp,
-          student_read_reply: false
+          student_read_reply: false,
+          last_sender_type: "admin"
         })
         .select()
         .single();
@@ -290,7 +294,8 @@ const MessagesTab = () => {
         .from("contact_messages")
         .update({ 
           admin_reply: updatedReply,
-          replied_at: timestamp
+          replied_at: timestamp,
+          last_sender_type: "admin"
         })
         .eq("id", selectedMessage.id);
 

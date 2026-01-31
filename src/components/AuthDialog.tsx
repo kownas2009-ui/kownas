@@ -99,9 +99,10 @@ const fullNameSchema = z.string()
 
 const phoneSchema = z.string()
   .trim()
-  .min(9, "Numer telefonu musi mieć min. 9 cyfr")
-  .max(15, "Max 15 znaków")
-  .regex(/^[\d\s]+$/, "Wpisz tylko cyfry");
+  .transform(val => val.replace(/\s/g, '')) // Remove spaces before validation
+  .refine(val => /^\d{9}$/.test(val), {
+    message: "Numer telefonu musi mieć dokładnie 9 cyfr (bez prefiksu +48)"
+  });
 
 // Rate limiting configuration
 const MAX_ATTEMPTS = 5;
@@ -419,6 +420,30 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             });
           }
         } else {
+          // Login successful - check if user is banned
+          const { data: sessionData } = await supabase.auth.getSession();
+          const userId = sessionData.session?.user?.id;
+          
+          if (userId) {
+            // Check ban status
+            const { data: banData } = await supabase.functions.invoke("check-user-banned", {
+              body: { userId }
+            });
+            
+            if (banData?.is_banned) {
+              // User is banned - sign them out immediately
+              await supabase.auth.signOut();
+              toast({
+                title: "🚫 Konto zbanowane",
+                description: "Twoje konto zostało zablokowane. Nie możesz korzystać z serwisu. Jeśli uważasz, że to błąd, skontaktuj się z administratorem.",
+                variant: "destructive",
+                duration: 15000,
+              });
+              setIsLoading(false);
+              return;
+            }
+          }
+          
           setAttempts(0);
           toast({
             title: "Zalogowano pomyślnie! ✓",
@@ -783,16 +808,16 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
                         </span>
                         <Input
                           type="tel"
-                          placeholder="123 456 789"
+                          placeholder="123456789"
                           value={phone}
                           onChange={(e) => {
-                            // Only allow digits and spaces
-                            const cleaned = e.target.value.replace(/[^\d\s]/g, '');
+                            // Only allow digits, max 9
+                            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 9);
                             setPhone(cleaned);
                           }}
                           className="bg-card rounded-l-none"
                           disabled={isLoading || isLockedOut}
-                          maxLength={15}
+                          maxLength={9}
                           autoComplete="tel"
                         />
                       </div>
