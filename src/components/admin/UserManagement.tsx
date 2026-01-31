@@ -18,7 +18,9 @@ import {
   Pencil,
   Save,
   X,
-  FileText
+  FileText,
+  Ban,
+  ShieldOff
 } from "lucide-react";
 import {
   AlertDialog,
@@ -46,6 +48,7 @@ interface UserProfile {
   lesson_count: number;
   is_admin?: boolean;
   is_verified?: boolean;
+  is_banned?: boolean;
 }
 
 const UserManagement = () => {
@@ -53,6 +56,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [banningId, setBanningId] = useState<string | null>(null);
   const [editingPhone, setEditingPhone] = useState<string | null>(null);
   const [editPhoneValue, setEditPhoneValue] = useState("");
 
@@ -109,6 +113,14 @@ const UserManagement = () => {
         console.error("Error fetching verification status:", e);
       }
 
+      // Fetch banned users
+      const { data: bannedUsers, error: bannedError } = await supabase
+        .from("banned_users")
+        .select("user_id");
+      
+      if (bannedError) console.error("Error fetching banned users:", bannedError);
+      const bannedUserIds = new Set(bannedUsers?.map(b => b.user_id) || []);
+
       // Combine data
       const usersWithCounts = (profiles || []).map(p => {
         const isAdminAccount = adminUserIds.has(p.user_id);
@@ -120,7 +132,8 @@ const UserManagement = () => {
           lesson_count: lessonCounts[p.user_id] || 0,
           is_admin: isAdminAccount,
           // Use actual email verification status
-          is_verified: isAdminAccount || (userVerification?.is_verified ?? false)
+          is_verified: isAdminAccount || (userVerification?.is_verified ?? false),
+          is_banned: bannedUserIds.has(p.user_id)
         };
       });
 
@@ -166,6 +179,53 @@ const UserManagement = () => {
       toast.error(error.message || "Błąd podczas usuwania konta");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleBanUser = async (userId: string, userName: string) => {
+    setBanningId(userId);
+    try {
+      const { error } = await supabase
+        .from("banned_users")
+        .insert({ user_id: userId });
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.user_id === userId ? { ...u, is_banned: true } : u
+      ));
+      
+      toast.success(`Użytkownik ${userName} został zbanowany`);
+    } catch (error: any) {
+      console.error("Error banning user:", error);
+      toast.error(error.message || "Błąd podczas banowania użytkownika");
+    } finally {
+      setBanningId(null);
+    }
+  };
+
+  const handleUnbanUser = async (userId: string, userName: string) => {
+    setBanningId(userId);
+    try {
+      const { error } = await supabase
+        .from("banned_users")
+        .delete()
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.user_id === userId ? { ...u, is_banned: false } : u
+      ));
+      
+      toast.success(`Użytkownik ${userName} został odbanowany`);
+    } catch (error: any) {
+      console.error("Error unbanning user:", error);
+      toast.error(error.message || "Błąd podczas odbanowywania użytkownika");
+    } finally {
+      setBanningId(null);
     }
   };
 
@@ -232,13 +292,17 @@ const UserManagement = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ delay: index * 0.03 }}
-      className="p-5 hover:bg-muted/30 transition-colors"
+      className={`p-5 hover:bg-muted/30 transition-colors ${user.is_banned ? 'bg-red-500/5' : ''}`}
     >
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center relative">
             <GraduationCap className="w-6 h-6 text-primary" />
-            {user.is_verified ? (
+            {user.is_banned ? (
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-red-600 flex items-center justify-center">
+                <Ban className="w-3 h-3 text-white" />
+              </div>
+            ) : user.is_verified ? (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                 <CheckCircle className="w-3 h-3 text-white" />
               </div>
@@ -250,10 +314,16 @@ const UserManagement = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-display font-semibold text-foreground">
+              <h3 className={`font-display font-semibold ${user.is_banned ? 'text-red-600' : 'text-foreground'}`}>
                 {user.full_name || "Brak nazwy"}
               </h3>
-              {!user.is_verified && (
+              {user.is_banned && (
+                <Badge variant="destructive" className="text-xs">
+                  <Ban className="w-3 h-3 mr-1" />
+                  Zbanowany
+                </Badge>
+              )}
+              {!user.is_verified && !user.is_banned && (
                 <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
                   <Mail className="w-3 h-3 mr-1" />
                   Oczekuje na weryfikację
@@ -345,46 +415,132 @@ const UserManagement = () => {
               Admin
             </span>
           ) : (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                  disabled={deletingId === user.id}
-                >
-                  {deletingId === user.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="font-display flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                    Usunąć konto?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription className="font-body">
-                    Czy na pewno chcesz usunąć konto użytkownika{" "}
-                    <strong>{user.full_name}</strong>?
-                    <br /><br />
-                    Zostaną usunięte wszystkie dane: rezerwacje, notatki i profil.
-                    <strong className="text-destructive block mt-2">Tej akcji nie można cofnąć!</strong>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Anuluj</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => handleDeleteUser(user.user_id, user.id)}
-                    className="bg-destructive hover:bg-destructive/90"
+            <>
+              {/* Ban/Unban button */}
+              {user.is_banned ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-green-600 border-green-600/30 hover:bg-green-600/10"
+                      disabled={banningId === user.user_id}
+                    >
+                      {banningId === user.user_id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ShieldOff className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="font-display flex items-center gap-2">
+                        <ShieldOff className="w-5 h-5 text-green-600" />
+                        Odbanować użytkownika?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="font-body">
+                        Czy na pewno chcesz odbanować użytkownika{" "}
+                        <strong>{user.full_name}</strong>?
+                        <br /><br />
+                        Użytkownik będzie mógł ponownie korzystać z serwisu.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleUnbanUser(user.user_id, user.full_name)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Odbanuj
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-orange-600 border-orange-600/30 hover:bg-orange-600/10"
+                      disabled={banningId === user.user_id}
+                    >
+                      {banningId === user.user_id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Ban className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="font-display flex items-center gap-2">
+                        <Ban className="w-5 h-5 text-orange-600" />
+                        Zbanować użytkownika?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="font-body">
+                        Czy na pewno chcesz zbanować użytkownika{" "}
+                        <strong>{user.full_name}</strong>?
+                        <br /><br />
+                        Zbanowany użytkownik nie będzie mógł się zalogować ani korzystać z serwisu.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleBanUser(user.user_id, user.full_name)}
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        Zbanuj
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              
+              {/* Delete button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    disabled={deletingId === user.id}
                   >
-                    Usuń konto
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    {deletingId === user.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="font-display flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                      Usunąć konto?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="font-body">
+                      Czy na pewno chcesz usunąć konto użytkownika{" "}
+                      <strong>{user.full_name}</strong>?
+                      <br /><br />
+                      Zostaną usunięte wszystkie dane: rezerwacje, notatki i profil.
+                      <strong className="text-destructive block mt-2">Tej akcji nie można cofnąć!</strong>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDeleteUser(user.user_id, user.id)}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Usuń konto
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
         </div>
       </div>

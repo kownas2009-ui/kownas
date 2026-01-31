@@ -154,7 +154,8 @@ const StudentMessaging = () => {
           sender_email: user.email!,
           sender_phone: profile.phone,
           message: newMessage.trim(),
-          student_read_reply: true
+          student_read_reply: true,
+          last_sender_type: "student"
         });
 
       if (error) throw error;
@@ -186,7 +187,8 @@ const StudentMessaging = () => {
         .from("contact_messages")
         .update({ 
           message: updatedMessage,
-          student_read_reply: true
+          student_read_reply: true,
+          last_sender_type: "student"
         })
         .eq("id", messageId);
 

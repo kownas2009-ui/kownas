@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      banned_users: {
+        Row: {
+          banned_at: string
+          banned_by: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string
+          banned_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_at?: string
+          banned_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       blocked_days: {
         Row: {
           blocked_date: string
@@ -127,6 +151,7 @@ export type Database = {
           created_at: string
           id: string
           is_read: boolean
+          last_sender_type: string | null
           message: string
           replied_at: string | null
           sender_email: string
@@ -139,6 +164,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
+          last_sender_type?: string | null
           message: string
           replied_at?: string | null
           sender_email: string
@@ -151,6 +177,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
+          last_sender_type?: string | null
           message?: string
           replied_at?: string | null
           sender_email?: string
