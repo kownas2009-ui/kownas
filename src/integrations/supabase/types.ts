@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           banned_at: string
           banned_by: string | null
+          banned_email: string | null
           id: string
           reason: string | null
           user_id: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           banned_at?: string
           banned_by?: string | null
+          banned_email?: string | null
           id?: string
           reason?: string | null
           user_id: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           banned_at?: string
           banned_by?: string | null
+          banned_email?: string | null
           id?: string
           reason?: string | null
           user_id?: string
