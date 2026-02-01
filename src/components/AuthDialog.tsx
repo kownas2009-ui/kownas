@@ -467,12 +467,62 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         
         // Format phone with +48 prefix and sanitize all inputs
         const formattedPhone = phone.trim() ? `+48${phone.replace(/\D/g, '')}` : '';
-        const { error } = await signUp(
+        const { error, data } = await signUp(
           sanitizeInput(email.trim().toLowerCase()), 
           password, 
           sanitizedFullName, 
           formattedPhone
         );
+        
+        const userEmail = email.trim().toLowerCase();
+        
+        // Check if this email already exists (identities will be empty or null for existing users)
+        // This happens when: 1) user already verified, or 2) user was deleted but email still in system
+        if (data?.user && (!data.user.identities || data.user.identities.length === 0)) {
+          // Check if email is already confirmed
+          if (data.user.email_confirmed_at) {
+            toast({
+              title: "Konto już istnieje ✓",
+              description: "Ten email został już zweryfikowany. Przejdź do logowania.",
+              duration: 8000,
+            });
+            // Switch to login view with email pre-filled
+            setEmail(userEmail);
+            setPassword("");
+            setView("login");
+            setIsLoading(false);
+            return;
+          } else {
+            // User exists but not confirmed - try to resend verification
+            try {
+              await supabase.auth.resend({
+                type: 'signup',
+                email: userEmail,
+                options: {
+                  emailRedirectTo: window.location.origin,
+                }
+              });
+              toast({
+                title: "Email weryfikacyjny wysłany 📧",
+                description: `Sprawdź skrzynkę ${userEmail} (także folder SPAM).`,
+                duration: 10000,
+              });
+              setRegisteredEmail(userEmail);
+              setView("registration-success");
+            } catch (resendError) {
+              console.log('Resend error:', resendError);
+              toast({
+                title: "Konto już istnieje",
+                description: "Spróbuj się zalogować lub użyj 'Zapomniałeś hasła?'",
+                variant: "destructive",
+              });
+              setView("login");
+            }
+            setIsLoading(false);
+            return;
+          }
+        }
+        
         if (error) {
           const errorMsg = error.message?.toLowerCase() || '';
           console.log('Registration error:', error.message);
@@ -511,8 +561,7 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
             });
           }
         } else {
-          // Registration successful - show resend verification view
-          const userEmail = email.trim().toLowerCase();
+          // New registration successful - show resend verification view
           setRegisteredEmail(userEmail);
           setEmail(userEmail);
           
