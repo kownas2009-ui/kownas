@@ -182,21 +182,28 @@ const UserManagement = () => {
     }
   };
 
-  const handleBanUser = async (userId: string, userName: string) => {
+  const handleBanUser = async (userId: string, userName: string, userEmail?: string) => {
     setBanningId(userId);
     try {
+      // Insert ban record with email to block future registrations
       const { error } = await supabase
         .from("banned_users")
-        .insert({ user_id: userId });
+        .insert({ 
+          user_id: userId,
+          banned_email: userEmail?.toLowerCase() || null
+        });
 
       if (error) throw error;
 
+      // Force logout the banned user by invalidating their session
+      // This is done by the user's own session check on next request
+      
       // Update local state
       setUsers(prev => prev.map(u => 
         u.user_id === userId ? { ...u, is_banned: true } : u
       ));
       
-      toast.success(`Użytkownik ${userName} został zbanowany`);
+      toast.success(`Użytkownik ${userName} został zbanowany. Nie będzie mógł się zalogować ani założyć nowego konta.`);
     } catch (error: any) {
       console.error("Error banning user:", error);
       toast.error(error.message || "Błąd podczas banowania użytkownika");
@@ -489,7 +496,7 @@ const UserManagement = () => {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Anuluj</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => handleBanUser(user.user_id, user.full_name)}
+                        onClick={() => handleBanUser(user.user_id, user.full_name, user.email)}
                         className="bg-orange-600 hover:bg-orange-700"
                       >
                         Zbanuj

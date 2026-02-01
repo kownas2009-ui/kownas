@@ -508,7 +508,12 @@ const AdminPanel = () => {
       today.setHours(0, 0, 0, 0);
       const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const pendingCount = (bookingsData || []).filter((b) => b.status === "pending").length;
+      // Only count pending bookings with dates from today onwards (not old ones)
+      const pendingCount = (bookingsData || []).filter((b) => {
+        const bookingDate = new Date(b.booking_date);
+        bookingDate.setHours(0, 0, 0, 0);
+        return b.status === "pending" && bookingDate >= today;
+      }).length;
       const confirmedCount = (bookingsData || []).filter((b) => b.status === "confirmed").length;
       
       // CRITICAL: Only count active bookings (pending/confirmed) for "this week" - NOT cancelled!

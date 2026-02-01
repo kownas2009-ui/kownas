@@ -478,12 +478,30 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         
         // Check if this email already exists (identities will be empty or null for existing users)
         // This happens when: 1) user already verified, or 2) user was deleted but email still in system
+        // Check if this email is banned
+        const { data: bannedData } = await supabase
+          .from("banned_users")
+          .select("banned_email")
+          .eq("banned_email", userEmail)
+          .maybeSingle();
+        
+        if (bannedData) {
+          toast({
+            title: "🚫 Rejestracja niemożliwa",
+            description: "Nie możesz założyć konta na ten adres email.",
+            variant: "destructive",
+            duration: 10000,
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         if (data?.user && (!data.user.identities || data.user.identities.length === 0)) {
           // Check if email is already confirmed
           if (data.user.email_confirmed_at) {
             toast({
-              title: "Konto już istnieje ✓",
-              description: "Ten email został już zweryfikowany. Przejdź do logowania.",
+              title: "Konto zostało pomyślnie utworzone ✓",
+              description: "Twoje konto już było zweryfikowane. Przejdź do logowania.",
               duration: 8000,
             });
             // Switch to login view with email pre-filled

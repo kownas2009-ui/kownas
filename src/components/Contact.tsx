@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Calendar, Video, Send, Phone, Sparkles, Loader2, CheckCircle } from "lucide-react";
+import { Mail, Calendar, Video, Send, Phone, Sparkles, Loader2, CheckCircle, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MoleculeDecoration from "./MoleculeDecoration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
+import AuthDialog from "./AuthDialog";
 
 const messageSchema = z.object({
   name: z.string().trim().min(2, "Imię jest wymagane").max(100, "Max 100 znaków"),
@@ -17,6 +19,7 @@ const messageSchema = z.object({
 });
 
 const Contact = () => {
+  const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,6 +27,30 @@ const Contact = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill user data when logged in
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        // Set email from auth
+        setEmail(user.email || "");
+        
+        // Fetch profile for name and phone
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (profile) {
+          setName(profile.full_name || "");
+          setPhone(profile.phone || "");
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,9 +90,6 @@ const Contact = () => {
       
       // Reset form after delay
       setTimeout(() => {
-        setName("");
-        setEmail("");
-        setPhone("");
         setMessage("");
         setIsSuccess(false);
       }, 3000);
@@ -80,6 +104,35 @@ const Contact = () => {
       setIsLoading(false);
     }
   };
+
+  // Show login prompt if not authenticated
+  const renderLoginPrompt = () => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="text-center py-12 px-6"
+    >
+      <motion.div
+        className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", delay: 0.2 }}
+      >
+        <LogIn className="w-10 h-10 text-primary" />
+      </motion.div>
+      <h3 className="font-display text-2xl font-bold mb-3">Zaloguj się, aby wysłać wiadomość</h3>
+      <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+        Formularz kontaktowy jest dostępny tylko dla zalogowanych użytkowników. 
+        Zaloguj się lub utwórz konto, aby się ze mną skontaktować.
+      </p>
+      <AuthDialog>
+        <Button variant="hero" size="lg" className="gap-2">
+          <LogIn className="w-5 h-5" />
+          Zaloguj się
+        </Button>
+      </AuthDialog>
+    </motion.div>
+  );
 
   return (
     <section className="py-24 px-4 bg-card/50 relative overflow-hidden">
@@ -227,7 +280,7 @@ const Contact = () => {
             </motion.div>
           </div>
 
-          {/* Contact form */}
+          {/* Contact form or login prompt */}
           <motion.div 
             className="p-8 rounded-2xl bg-background border border-border shadow-card"
             initial={{ opacity: 0, x: 20 }}
@@ -235,7 +288,18 @@ const Contact = () => {
             viewport={{ once: true }}
           >
             <AnimatePresence mode="wait">
-              {isSuccess ? (
+              {authLoading ? (
+                <motion.div
+                  key="loading"
+                  className="flex items-center justify-center py-12"
+                >
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </motion.div>
+              ) : !user ? (
+                <motion.div key="login-prompt">
+                  {renderLoginPrompt()}
+                </motion.div>
+              ) : isSuccess ? (
                 <motion.div
                   key="success"
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -324,6 +388,7 @@ const Contact = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}
                       maxLength={255}
+                      readOnly
                     />
                     {errors.email && (
                       <p className="text-sm text-destructive mt-1">{errors.email}</p>
