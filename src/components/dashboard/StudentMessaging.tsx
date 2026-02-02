@@ -160,7 +160,7 @@ const StudentMessaging = () => {
 
       if (error) throw error;
 
-      toast.success("Wiadomość wysłana!");
+      toast.success("Wiadomość wysłana! ✓");
       setNewMessage("");
       setShowNewForm(false);
       fetchMessages();
@@ -194,7 +194,7 @@ const StudentMessaging = () => {
 
       if (error) throw error;
 
-      toast.success("Odpowiedź wysłana!");
+      toast.success("Odpowiedź wysłana! ✓");
       setReplyText("");
       setReplyingTo(null);
       fetchMessages();
@@ -261,13 +261,45 @@ const StudentMessaging = () => {
       });
     }
     
-    // Sort by timestamp (oldest first)
+    // Sort by timestamp (oldest first for chat display - natural reading order)
     return allMessages.sort((a, b) => {
       const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
       const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
       return dateA - dateB;
     });
   };
+
+  // Sort messages by last activity (newest first)
+  const sortedMessages = [...messages].sort((a, b) => {
+    // Get the latest timestamp from each message thread
+    const getLatestTimestamp = (msg: ContactMessage) => {
+      let latest = new Date(msg.created_at).getTime();
+      if (msg.replied_at) {
+        const replyTime = new Date(msg.replied_at).getTime();
+        if (replyTime > latest) latest = replyTime;
+      }
+      // Parse message timestamps
+      const msgParts = msg.message?.split('\n---\n') || [];
+      msgParts.forEach(part => {
+        const match = part.match(/^\[(.+?)\]/);
+        if (match) {
+          const ts = new Date(match[1]).getTime();
+          if (!isNaN(ts) && ts > latest) latest = ts;
+        }
+      });
+      // Parse admin reply timestamps
+      const replyParts = msg.admin_reply?.split('\n---\n') || [];
+      replyParts.forEach(part => {
+        const match = part.match(/^\[(.+?)\]/);
+        if (match) {
+          const ts = new Date(match[1]).getTime();
+          if (!isNaN(ts) && ts > latest) latest = ts;
+        }
+      });
+      return latest;
+    };
+    return getLatestTimestamp(b) - getLatestTimestamp(a);
+  });
 
   return (
     <motion.div
@@ -373,7 +405,7 @@ const StudentMessaging = () => {
                 )}
 
                 {/* Messages list */}
-                {messages.length === 0 && !showNewForm ? (
+                {sortedMessages.length === 0 && !showNewForm ? (
                   <div className="text-center py-6">
                     <MessageSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">
@@ -381,7 +413,7 @@ const StudentMessaging = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
+                  sortedMessages.map((msg) => {
                     const hasUnreadReply = msg.admin_reply && !msg.student_read_reply;
                     
                     return (
