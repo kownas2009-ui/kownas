@@ -325,6 +325,7 @@ const MessagesTab = () => {
         .update({ 
           admin_reply: updatedReply,
           replied_at: timestamp,
+          student_read_reply: false, // Student hasn't read this yet
           last_sender_type: "admin"
         })
         .eq("id", selectedMessage.id);
@@ -334,10 +335,10 @@ const MessagesTab = () => {
       toast.success("Odpowiedź wysłana!");
       setMessages(prev => prev.map(m => 
         m.id === selectedMessage.id 
-          ? { ...m, admin_reply: updatedReply, replied_at: timestamp }
+          ? { ...m, admin_reply: updatedReply, replied_at: timestamp, student_read_reply: false }
           : m
       ));
-      setSelectedMessage(prev => prev ? { ...prev, admin_reply: updatedReply, replied_at: timestamp } : null);
+      setSelectedMessage(prev => prev ? { ...prev, admin_reply: updatedReply, replied_at: timestamp, student_read_reply: false } : null);
       setReplyText(""); // Clear input after sending
     } catch (error) {
       console.error("Error sending reply:", error);
@@ -498,12 +499,12 @@ const MessagesTab = () => {
                   transition={{ delay: i * 0.03 }}
                   className={`p-4 cursor-pointer transition-colors relative ${
                     selectedMessage?.id === message.id ? "bg-primary/10" : "hover:bg-muted/30"
-                  } ${hasUnreadStudentMessage ? "bg-red-500/5" : ""}`}
+                  } ${hasUnreadStudentMessage ? "bg-red-500/10 border-l-4 border-l-red-500" : ""}`}
                   onClick={() => handleSelectMessage(message)}
                 >
                   {/* Red dot indicator for unread student messages */}
                   {hasUnreadStudentMessage && (
-                    <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    <span className="absolute top-3 right-3 w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
                   )}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
