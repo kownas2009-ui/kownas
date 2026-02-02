@@ -366,7 +366,8 @@ const MessagesTab = () => {
     }
   };
 
-  const unreadCount = messages.filter(m => !m.is_read).length;
+  // Count messages where last_sender_type is 'student' and is_read is false
+  const unreadCount = messages.filter(m => !m.is_read && m.last_sender_type === 'student').length;
 
   if (loading) {
     return (
@@ -485,26 +486,31 @@ const MessagesTab = () => {
                 <p className="text-muted-foreground">Brak wiadomości</p>
               </motion.div>
             ) : (
-              messages.map((message, i) => (
+              messages.map((message, i) => {
+                // Show red dot if last_sender_type is 'student' and message is not read
+                const hasUnreadStudentMessage = !message.is_read && message.last_sender_type === 'student';
+                
+                return (
                 <motion.div
                   key={message.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`p-4 cursor-pointer transition-colors ${
+                  className={`p-4 cursor-pointer transition-colors relative ${
                     selectedMessage?.id === message.id ? "bg-primary/10" : "hover:bg-muted/30"
-                  } ${!message.is_read ? "bg-primary/5" : ""}`}
+                  } ${hasUnreadStudentMessage ? "bg-red-500/5" : ""}`}
                   onClick={() => handleSelectMessage(message)}
                 >
+                  {/* Red dot indicator for unread student messages */}
+                  {hasUnreadStudentMessage && (
+                    <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`font-semibold truncate ${!message.is_read ? "text-primary" : "text-foreground"}`}>
+                        <h3 className={`font-semibold truncate ${hasUnreadStudentMessage ? "text-red-500" : "text-foreground"}`}>
                           {message.sender_name}
                         </h3>
-                        {!message.is_read && (
-                          <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                        )}
                         {message.admin_reply && (
                           <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                         )}
@@ -546,7 +552,7 @@ const MessagesTab = () => {
                     </AlertDialog>
                   </div>
                 </motion.div>
-              ))
+              );})
             )}
           </AnimatePresence>
         </div>
