@@ -160,6 +160,7 @@ const StudentMessaging = () => {
           sender_phone: profile.phone,
           message: newMessage.trim(),
           student_read_reply: true,
+          is_read: false, // Admin hasn't read this yet
           last_sender_type: "student"
         });
 
@@ -193,6 +194,7 @@ const StudentMessaging = () => {
         .update({ 
           message: updatedMessage,
           student_read_reply: true,
+          is_read: false, // Admin hasn't read this yet
           last_sender_type: "student"
         })
         .eq("id", messageId);
@@ -419,19 +421,26 @@ const StudentMessaging = () => {
                   </div>
                 ) : (
                   sortedMessages.map((msg) => {
-                    const hasUnreadReply = msg.admin_reply && !msg.student_read_reply;
+                    // Show red dot if admin sent a reply that student hasn't read
+                    const hasUnreadAdminReply = !msg.student_read_reply && msg.last_sender_type === 'admin';
                     
                     return (
                       <motion.div
                         key={msg.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`relative rounded-2xl border ${hasUnreadReply ? 'border-red-500/50 bg-red-500/5' : 'border-border bg-muted/20'} p-4 space-y-3`}
-                        onClick={() => hasUnreadReply && markAsRead(msg.id)}
+                        className={`relative rounded-2xl border p-4 space-y-3 ${
+                          hasUnreadAdminReply 
+                            ? 'border-red-500 bg-red-500/10 border-l-4 border-l-red-500' 
+                            : 'border-border bg-muted/20'
+                        }`}
+                        onClick={() => hasUnreadAdminReply && markAsRead(msg.id)}
                       >
-                        {/* Unread indicator */}
-                        {hasUnreadReply && (
-                          <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                        {/* Unread indicator - big red dot */}
+                        {hasUnreadAdminReply && (
+                          <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">!</span>
+                          </div>
                         )}
 
                         {/* Thread header */}
