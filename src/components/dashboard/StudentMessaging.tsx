@@ -31,6 +31,7 @@ interface ContactMessage {
   replied_at: string | null;
   created_at: string;
   student_read_reply: boolean;
+  last_sender_type?: string;
 }
 
 const StudentMessaging = () => {
@@ -69,14 +70,16 @@ const StudentMessaging = () => {
             
             if (payload.eventType === 'INSERT') {
               const newMsg = payload.new as ContactMessage;
-              setMessages(prev => [newMsg, ...prev]);
-              // Only play sound if admin sent a new message (admin_reply exists)
-              // and it's not the student's own message
-              if (newMsg.admin_reply) {
+              setMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [newMsg, ...prev];
+              });
+              // Only play sound if admin sent a new message (last_sender_type is 'admin')
+              if (newMsg.last_sender_type === 'admin') {
                 playNotificationSound();
                 toast.info("Nowa odpowiedź od Anety!");
               }
-              // Don't show notification for own messages
+              // Don't show notification for student's own messages
             } else if (payload.eventType === 'UPDATE') {
               const updatedMsg = payload.new as ContactMessage;
               const oldMsg = payload.old as Partial<ContactMessage>;
@@ -85,12 +88,14 @@ const StudentMessaging = () => {
                 m.id === updatedMsg.id ? updatedMsg : m
               ));
               
-              // Only play sound if admin_reply was added or changed (not when student reads or updates)
-              if (updatedMsg.admin_reply && updatedMsg.admin_reply !== oldMsg.admin_reply) {
+              // Only play sound if admin sent a reply (last_sender_type changed to 'admin')
+              // and the admin_reply content actually changed
+              if (updatedMsg.last_sender_type === 'admin' && 
+                  updatedMsg.admin_reply !== oldMsg.admin_reply) {
                 playNotificationSound();
                 toast.info("Nowa odpowiedź od Anety!");
               }
-              // Don't notify when student marks message as read or when student updates message
+              // Don't notify when student sends their own message
             } else if (payload.eventType === 'DELETE') {
               const deletedId = (payload.old as ContactMessage).id;
               setMessages(prev => prev.filter(m => m.id !== deletedId));
