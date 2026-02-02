@@ -150,16 +150,46 @@ const MessagesTab = () => {
     };
   }, [playNotificationSound]);
 
+  // Helper function to get latest timestamp from a message thread
+  const getLatestTimestamp = (msg: ContactMessage) => {
+    let latest = new Date(msg.created_at).getTime();
+    if (msg.replied_at) {
+      const replyTime = new Date(msg.replied_at).getTime();
+      if (replyTime > latest) latest = replyTime;
+    }
+    // Parse message timestamps
+    const msgParts = msg.message?.split('\n---\n') || [];
+    msgParts.forEach(part => {
+      const match = part.match(/^\[(.+?)\]/);
+      if (match) {
+        const ts = new Date(match[1]).getTime();
+        if (!isNaN(ts) && ts > latest) latest = ts;
+      }
+    });
+    // Parse admin reply timestamps  
+    const replyParts = msg.admin_reply?.split('\n---\n') || [];
+    replyParts.forEach(part => {
+      const match = part.match(/^\[(.+?)\]/);
+      if (match) {
+        const ts = new Date(match[1]).getTime();
+        if (!isNaN(ts) && ts > latest) latest = ts;
+      }
+    });
+    return latest;
+  };
+
   const fetchMessages = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("contact_messages")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Sort by latest activity (newest first)
+      const sortedData = (data || []).sort((a, b) => getLatestTimestamp(b) - getLatestTimestamp(a));
+      setMessages(sortedData);
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast.error("Błąd podczas ładowania wiadomości");

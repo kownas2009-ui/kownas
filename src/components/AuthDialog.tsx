@@ -497,48 +497,19 @@ const AuthDialog = ({ children }: AuthDialogProps) => {
         }
         
         if (data?.user && (!data.user.identities || data.user.identities.length === 0)) {
-          // Check if email is already confirmed
-          if (data.user.email_confirmed_at) {
-            toast({
-              title: "Konto zostało pomyślnie utworzone ✓",
-              description: "Twoje konto już było zweryfikowane. Przejdź do logowania.",
-              duration: 8000,
-            });
-            // Switch to login view with email pre-filled
-            setEmail(userEmail);
-            setPassword("");
-            setView("login");
-            setIsLoading(false);
-            return;
-          } else {
-            // User exists but not confirmed - try to resend verification
-            try {
-              await supabase.auth.resend({
-                type: 'signup',
-                email: userEmail,
-                options: {
-                  emailRedirectTo: window.location.origin,
-                }
-              });
-              toast({
-                title: "Email weryfikacyjny wysłany 📧",
-                description: `Sprawdź skrzynkę ${userEmail} (także folder SPAM).`,
-                duration: 10000,
-              });
-              setRegisteredEmail(userEmail);
-              setView("registration-success");
-            } catch (resendError) {
-              console.log('Resend error:', resendError);
-              toast({
-                title: "Konto już istnieje",
-                description: "Spróbuj się zalogować lub użyj 'Zapomniałeś hasła?'",
-                variant: "destructive",
-              });
-              setView("login");
-            }
-            setIsLoading(false);
-            return;
-          }
+          // User already exists - show appropriate message
+          toast({
+            title: "Konto już istnieje",
+            description: "Na ten adres email już istnieje konto. Przejdź do logowania.",
+            variant: "destructive",
+            duration: 8000,
+          });
+          // Switch to login view with email pre-filled
+          setEmail(userEmail);
+          setPassword("");
+          setView("login");
+          setIsLoading(false);
+          return;
         }
         
         if (error) {
