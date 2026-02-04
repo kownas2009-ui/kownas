@@ -32,12 +32,12 @@ const Services = () => {
     {
       icon: FlaskConical,
       title: "Liceum / Technikum",
-      subtitle: "Chemia",
+      subtitle: "Chemia i Fizyka",
       price: "120",
       features: [
+        "Fizyka na poziomie podstawowym",
         "Chemia na poziomie rozszerzonym",
         "Przygotowanie do matury",
-        "Rozwiązywanie zadań maturalnych",
         "Przygotowanie do sprawdzianów",
       ],
       popular: true,

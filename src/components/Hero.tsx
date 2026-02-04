@@ -201,13 +201,12 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <span className="text-foreground">Cześć, jestem </span>
           <motion.span 
             className="text-gradient-animated inline-block relative"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            Aneta
+            Witaj w świecie chemii i fizyki
             <motion.span
               className="absolute -bottom-2 left-0 w-full h-1 rounded-full bg-gradient-to-r from-primary via-secondary to-primary"
               initial={{ scaleX: 0 }}

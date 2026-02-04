@@ -15,7 +15,8 @@ import {
   Clock,
   Reply,
   Plus,
-  X
+  X,
+  ArrowUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -76,6 +77,7 @@ const MessagesTab = () => {
   
   const { playNotificationSound } = useNotificationSound();
   const previousMessagesRef = useRef<ContactMessage[]>([]);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -475,7 +477,8 @@ const MessagesTab = () => {
             </Button>
           </div>
 
-        <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
+        <div className="relative">
+          <div ref={messagesContainerRef} className="divide-y divide-border max-h-[600px] overflow-y-auto">
           <AnimatePresence>
             {messages.length === 0 ? (
               <motion.div
@@ -556,6 +559,20 @@ const MessagesTab = () => {
               );})
             )}
           </AnimatePresence>
+        </div>
+        
+        {/* Scroll to top button */}
+        {messages.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute bottom-2 right-2 gap-1 opacity-80 hover:opacity-100"
+            onClick={() => messagesContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <ArrowUp className="w-3 h-3" />
+            Najnowsze
+          </Button>
+        )}
         </div>
       </div>
 
