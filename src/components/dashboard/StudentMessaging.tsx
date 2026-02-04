@@ -13,7 +13,8 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  User
+  User,
+  ArrowUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -48,6 +49,7 @@ const StudentMessaging = () => {
   const { playNotificationSound } = useNotificationSound();
   const lastMessageCountRef = useRef<number>(0);
   const lastAdminReplyRef = useRef<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -360,7 +362,8 @@ const StudentMessaging = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+              <div className="relative">
+                <div ref={messagesContainerRef} className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
                 {/* New message form */}
                 {showNewForm ? (
                   <motion.div
@@ -525,6 +528,20 @@ const StudentMessaging = () => {
                       </motion.div>
                     );
                   })
+                )}
+                </div>
+                
+                {/* Scroll to top button */}
+                {sortedMessages.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute bottom-2 right-2 gap-1 opacity-80 hover:opacity-100 z-10"
+                    onClick={() => messagesContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                    Najnowsze
+                  </Button>
                 )}
               </div>
             )}
