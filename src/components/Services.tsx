@@ -35,7 +35,7 @@ const Services = () => {
       subtitle: "Chemia i Fizyka",
       price: "120",
       features: [
-        "Fizyka na poziomie podstawowym",
+        "Chemia na poziomie podstawowym",
         "Chemia na poziomie rozszerzonym",
         "Przygotowanie do matury",
         "Przygotowanie do sprawdzianów",
@@ -149,7 +149,7 @@ const Services = () => {
 
               {service.popular && (
                 <motion.div 
-                  className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-gradient-to-r from-secondary via-yellow-400 to-secondary text-secondary-foreground text-sm font-bold shadow-lg"
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-gradient-to-r from-secondary via-accent to-secondary text-secondary-foreground text-sm font-bold shadow-lg"
                   initial={{ scale: 0, rotate: -10 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 0.5, type: "spring" }}
@@ -271,12 +271,12 @@ const Services = () => {
           
           {/* BLIK Only */}
           <motion.div
-            className="p-6 rounded-2xl bg-card border border-border shadow-soft"
+            className="p-6 rounded-2xl bg-card border border-border shadow-soft cosmic-card"
             whileHover={{ y: -5, scale: 1.02 }}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <svg className="w-6 h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -294,13 +294,13 @@ const Services = () => {
 
           {/* Cancellation Policy */}
           <motion.div
-            className="mt-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+            className="mt-6 p-4 rounded-xl bg-secondary/10 border border-secondary/30"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <p className="text-sm text-amber-800 dark:text-amber-200 font-body">
-              <strong>⚠️ Zasady anulowania:</strong> Bezpłatne anulowanie do 24h przed lekcją. 
+            <p className="text-sm text-foreground font-body">
+              <strong className="text-secondary">⚠️ Zasady anulowania:</strong> Bezpłatne anulowanie do 24h przed lekcją. 
               W przypadku późniejszego odwołania — opłata 50% wartości lekcji.
             </p>
           </motion.div>
