@@ -46,6 +46,8 @@ import UserManagement from "@/components/admin/UserManagement";
 import MessagesTab from "@/components/admin/MessagesTab";
 import SentNotesTab from "@/components/admin/SentNotesTab";
 import BlockedDaysManager from "@/components/admin/BlockedDaysManager";
+import AllStudentsDialog from "@/components/admin/AllStudentsDialog";
+import { startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
 interface Booking {
   id: string;
@@ -69,9 +71,8 @@ interface Booking {
 
 interface Stats {
   totalStudents: number;
-  pendingBookings: number;
-  confirmedBookings: number;
-  thisWeekBookings: number;
+  pendingBookingsThisMonth: number;
+  confirmedBookingsThisMonth: number;
 }
 
 // Animated molecule background component
@@ -392,15 +393,15 @@ const AdminPanel = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalStudents: 0,
-    pendingBookings: 0,
-    confirmedBookings: 0,
-    thisWeekBookings: 0
+    pendingBookingsThisMonth: 0,
+    confirmedBookingsThisMonth: 0
   });
   const [loadingData, setLoadingData] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
   const [showNextStudent, setShowNextStudent] = useState(false);
   const [activeTab, setActiveTab] = useState<"list" | "calendar" | "users" | "messages" | "notes">("list");
   const [selectedBookingDetails, setSelectedBookingDetails] = useState<Booking | null>(null);
+  const [showAllStudents, setShowAllStudents] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -499,35 +500,35 @@ const AdminPanel = () => {
 
       if (bookingsError) throw bookingsError;
 
-      // Count unique students from bookings (excluding cancelled)
-      const activeBookings = (bookingsData || []).filter((b) => b.status !== "cancelled");
-      const uniqueStudentIds = new Set(activeBookings.map((b) => b.user_id));
+      // Count ALL unique students from bookings (anyone who ever booked)
+      const allBookingsData = bookingsData || [];
+      const uniqueStudentIds = new Set(allBookingsData.map((b) => b.user_id));
       const studentsCount = uniqueStudentIds.size;
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      // Only count pending bookings with dates from today onwards (not old ones)
-      const pendingCount = (bookingsData || []).filter((b) => {
-        const bookingDate = new Date(b.booking_date);
-        bookingDate.setHours(0, 0, 0, 0);
-        return b.status === "pending" && bookingDate >= today;
-      }).length;
-      const confirmedCount = (bookingsData || []).filter((b) => b.status === "confirmed").length;
       
-      // CRITICAL: Only count active bookings (pending/confirmed) for "this week" - NOT cancelled!
-      const thisWeekCount = (bookingsData || []).filter((b) => {
-        const date = new Date(b.booking_date);
-        return date >= today && date <= weekLater && (b.status === "pending" || b.status === "confirmed");
+      // Get current month range
+      const monthStart = startOfMonth(today);
+      const monthEnd = endOfMonth(today);
+
+      // Count pending bookings THIS MONTH (from today onwards within month)
+      const pendingThisMonth = allBookingsData.filter((b) => {
+        const bookingDate = new Date(b.booking_date);
+        return b.status === "pending" && isWithinInterval(bookingDate, { start: monthStart, end: monthEnd });
+      }).length;
+      
+      // Count confirmed bookings THIS MONTH
+      const confirmedThisMonth = allBookingsData.filter((b) => {
+        const bookingDate = new Date(b.booking_date);
+        return b.status === "confirmed" && isWithinInterval(bookingDate, { start: monthStart, end: monthEnd });
       }).length;
 
-      setBookings(bookingsData || []);
+      setBookings(allBookingsData);
       setStats({
         totalStudents: studentsCount,
-        pendingBookings: pendingCount,
-        confirmedBookings: confirmedCount,
-        thisWeekBookings: thisWeekCount
+        pendingBookingsThisMonth: pendingThisMonth,
+        confirmedBookingsThisMonth: confirmedThisMonth
       });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -751,36 +752,61 @@ const AdminPanel = () => {
         <MonthlyStats bookings={bookings} />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard 
-            icon={Users} 
-            label="Uczniów" 
-            value={stats.totalStudents} 
-            color="bg-primary/10 text-primary" 
-            index={0} 
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0, type: "spring", stiffness: 200 }}
+            whileHover={{ y: -5, scale: 1.02 }}
+            onClick={() => setShowAllStudents(true)}
+            className="relative p-6 rounded-3xl bg-card border border-border shadow-soft overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors"
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="relative z-10">
+              <motion.div 
+                className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4"
+                whileHover={{ rotate: [0, -10, 10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
+                <Users className="w-7 h-7" />
+              </motion.div>
+              <motion.div 
+                className="text-4xl font-display font-bold text-foreground mb-1"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+              >
+                {stats.totalStudents}
+              </motion.div>
+              <div className="text-sm text-muted-foreground font-body">Uczniów (wszystkich)</div>
+              <div className="text-xs text-primary mt-1">Kliknij aby zobaczyć listę →</div>
+            </div>
+          </motion.div>
+          
           <StatCard 
             icon={Clock} 
-            label="Oczekujących" 
-            value={stats.pendingBookings} 
+            label="Oczekujących (ten miesiąc)" 
+            value={stats.pendingBookingsThisMonth} 
             color="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" 
             index={1} 
           />
           <StatCard 
             icon={CheckCircle} 
-            label="Potwierdzonych" 
-            value={stats.confirmedBookings} 
+            label="Potwierdzonych (ten miesiąc)" 
+            value={stats.confirmedBookingsThisMonth} 
             color="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
             index={2} 
           />
-          <StatCard 
-            icon={Calendar} 
-            label="Ten tydzień" 
-            value={stats.thisWeekBookings} 
-            color="bg-secondary/20 text-secondary-foreground" 
-            index={3} 
-          />
         </div>
+        
+        {/* All Students Dialog */}
+        <AllStudentsDialog 
+          isOpen={showAllStudents} 
+          onClose={() => setShowAllStudents(false)} 
+          bookings={bookings} 
+        />
 
         {/* View Toggle + PDF Generator */}
         <motion.div 
